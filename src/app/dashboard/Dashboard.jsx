@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getTranslations } from '@/lib/translations';
+import { getTranslations } from '@/src/lib/translations';
 import HistoryTab from './HistoryTab';
 import GraphsTab from './GraphsTab';
 
@@ -61,7 +61,7 @@ function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
       <div className="px-6 pt-3 pb-0 flex items-center justify-between">
         {/* Left: logo + name */}
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="Coachly" className="w-8 h-8 rounded-lg object-contain" />
+          <img src="/coachly-logo.png" alt="Coachly" className="w-8 h-8 rounded-lg object-contain" />
           <div>
             <div className="font-bold leading-tight" style={{ color: TX }}>
               Coachly
@@ -157,7 +157,7 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
               <div className="flex-1 rounded-xl px-4 py-3 text-center border" style={{ background: bucket ? BUCKET_COLORS[bucket] + '22' : BG, borderColor: BO }}>
                 <div className="text-[10px] font-bold tracking-wider uppercase" style={{ color: MU }}>{t.score ?? 'Score'}</div>
                 <div className="text-3xl font-black leading-none mt-1" style={{ color: AD }}>
-                  {score.compositeScore}<span className="text-sm font-bold" style={{ color: MU }}>/100</span>
+                  {bucketOf(score.compositeScore) ?? '—'}<span className="text-sm font-bold" style={{ color: MU }}>/5</span>
                 </div>
               </div>
               <div className="flex-1 rounded-xl px-4 py-3 text-center border" style={{ background: BG, borderColor: BO }}>

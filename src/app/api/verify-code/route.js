@@ -1,37 +1,36 @@
-// src/app/api/verify-code/route.js
-import { NextResponse } from "next/server";
-
-const API = process.env.API_URL ?? "http://localhost:5050";
+// app/api/verify-code/route.js
+import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   const { code } = await req.json();
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
 
-  console.log("[verify-code] code:", code, "API:", API);
-
-  if (!/^\d{6}$/.test(code?.trim())) {
-    return NextResponse.json({ valid: false, message: "Invalid code format" });
-  }
-
-  const url = `${API}/api/share/${code.trim()}`;
-  console.log("[verify-code] fetching:", url);
+  console.log('[verify-code] code:', code, 'API:', apiBase);
+  console.log('[verify-code] fetching:', `${apiBase}/api/share/${code}`);
 
   try {
-    const res  = await fetch(url);
-    const text = await res.text();
-    console.log("[verify-code] status:", res.status, "body:", text.slice(0, 300));
+    const res = await fetch(`${apiBase}/api/share/${code}`);
+    const body = await res.text();
+    console.log('[verify-code] status:', res.status, 'body:', body);
 
-    let json;
-    try { json = JSON.parse(text); } catch { 
-      return NextResponse.json({ valid: false, message: "Bad response from API" });
+    if (!res.ok) {
+      return NextResponse.json({
+        valid: false,
+        message: 'Invalid or expired code.',
+      });
     }
 
-    if (!json?.success || !json?.data) {
-      return NextResponse.json({ valid: false, message: json?.message ?? "Not found" });
-    }
+    const data = JSON.parse(body);
 
-    return NextResponse.json({ valid: true, patient: json.data });
-  } catch (e) {
-    console.error("[verify-code] fetch error:", e.message);
-    return NextResponse.json({ valid: false, message: e.message });
+    return NextResponse.json({
+      valid: true,
+      report: data.client ?? data,
+    });
+  } catch (err) {
+    console.error('[verify-code] error:', err);
+    return NextResponse.json({
+      valid: false,
+      message: 'Network error.',
+    });
   }
 }

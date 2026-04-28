@@ -6,6 +6,15 @@ import {
   BarChart, Bar,
 } from 'recharts';
 
+function bucketOf(score) {
+  if (score == null) return null;
+  if (score >= 80) return 5;
+  if (score >= 60) return 4;
+  if (score >= 40) return 3;
+  if (score >= 20) return 2;
+  return 1;
+}
+
 const A = '#4A7AB5', SU = '#FFFFFF', BO = '#D0DCEA', TX = '#1A2C3D', MU = '#7A9AB8';
 
 export default function GraphsTab({ logs, scores, t }) {
@@ -22,7 +31,7 @@ export default function GraphsTab({ logs, scores, t }) {
   // Composite score over time
   const scoreData = sortedScores.map((s) => ({
     date: s.date.slice(5),  // MM-DD
-    score: s.compositeScore,
+    score: bucketOf(s.compositeScore),
   }));
 
   // Daily minutes
@@ -72,7 +81,7 @@ export default function GraphsTab({ logs, scores, t }) {
         <LineChart data={scoreData}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis dataKey="date" stroke={MU} fontSize={10} />
-          <YAxis domain={[0, 100]} stroke={MU} fontSize={10} />
+          <YAxis domain={[0, 5]} stroke={MU} fontSize={10} ticks={[0,1,2,3,4,5]} />
           <Tooltip />
           <Line type="monotone" dataKey="score" stroke={A} strokeWidth={2} dot={{ r: 3 }} />
         </LineChart>

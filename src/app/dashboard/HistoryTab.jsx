@@ -67,8 +67,8 @@ function HistoryRow({ log, score, t, includeNotes }) {
         {/* Composite score */}
         {score && (
           <div className="text-sm font-black flex-shrink-0" style={{ color: AD }}>
-            {score.compositeScore}
-            <span className="text-[10px] font-bold" style={{ color: MU }}>/100</span>
+            {bucketOf(score.compositeScore) ?? '—'}
+            <span className="text-[10px] font-bold" style={{ color: MU }}>/5</span>
           </div>
         )}
 
