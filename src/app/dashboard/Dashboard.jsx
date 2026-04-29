@@ -124,8 +124,47 @@ function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
 
 // ── Day modal ────────────────────────────────────────────────────────────
 function DayModal({ date, log, score, onClose, t, includeNotes }) {
+  // DayModal v2 — expanded
   if (!log) return null;
   const bucket = bucketOf(score?.compositeScore);
+
+  // Workouts grouped by category, then by name within category.
+  // Falls back to legacy shape (just type+name) when sets/reps/weight aren't present.
+  const workouts = Array.isArray(log.workouts) ? log.workouts : [];
+  const categoryDurations = Array.isArray(log.categoryDurations) ? log.categoryDurations : [];
+  const totalMinutes = categoryDurations.reduce((s, c) => s + (c.durationMinutes || 0), 0)
+                    || workouts.reduce((s, w) => s + (w.durationMinutes || 0), 0);
+
+  const grouped = workouts.reduce((acc, w) => {
+    const key = w.type || w.category || "other";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(w);
+    return acc;
+  }, {});
+
+  const categoryLabel = (type) => {
+    if (!type) return "—";
+    const k = "category" + type.charAt(0).toUpperCase() + type.slice(1);
+    return t[k] ?? type;
+  };
+
+  // Helper: tiny pill row of "label · value" pairs, only renders pairs with a value
+  const Stats = ({ items }) => {
+    const visible = items.filter((it) => it.val !== null && it.val !== undefined && it.val !== "");
+    if (visible.length === 0) return null;
+    return (
+      <div className="grid grid-cols-2 gap-2">
+        {visible.map((it) => (
+          <div key={it.label} className="rounded-xl px-3 py-2 border" style={{ background: BG, borderColor: BO }}>
+            <div className="text-[9px] font-bold tracking-wider uppercase" style={{ color: MU }}>{it.label}</div>
+            <div className="text-base font-black mt-0.5" style={{ color: AD }}>
+              {it.val}{it.unit ? <span className="text-xs font-bold ml-0.5" style={{ color: MU }}>{it.unit}</span> : null}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div
@@ -139,7 +178,7 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
         style={{ background: SU, borderColor: BO }}
       >
         <div
-          className="sticky top-0 flex items-center justify-between px-5 py-4 text-white"
+          className="sticky top-0 flex items-center justify-between px-5 py-4 text-white z-10"
           style={{ background: `linear-gradient(135deg, ${A}, ${AD})` }}
         >
           <div>
@@ -152,56 +191,94 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
         </div>
 
         <div className="p-5 flex flex-col gap-4">
+          {/* ── Score + total minutes ─────────────────────────────── */}
           {score && (
             <div className="flex items-stretch gap-3">
               <div className="flex-1 rounded-xl px-4 py-3 text-center border" style={{ background: bucket ? BUCKET_COLORS[bucket] + '22' : BG, borderColor: BO }}>
                 <div className="text-[10px] font-bold tracking-wider uppercase" style={{ color: MU }}>{t.score ?? 'Score'}</div>
                 <div className="text-3xl font-black leading-none mt-1" style={{ color: AD }}>
-                  {bucketOf(score.compositeScore) ?? '—'}<span className="text-sm font-bold" style={{ color: MU }}>/5</span>
+                  {/* // score display: bucket + raw */}
+                  {bucket != null ? bucket : '—'}
+                  <span className="text-sm font-bold" style={{ color: MU }}>/5</span>
                 </div>
+                {score.compositeScore != null && (
+                  <div className="text-[10px] font-semibold mt-1" style={{ color: MU }}>
+                    {Math.round(score.compositeScore)}/100
+                  </div>
+                )}
               </div>
               <div className="flex-1 rounded-xl px-4 py-3 text-center border" style={{ background: BG, borderColor: BO }}>
                 <div className="text-[10px] font-bold tracking-wider uppercase" style={{ color: MU }}>{t.totalMinutes ?? 'Minutes'}</div>
                 <div className="text-3xl font-black leading-none mt-1" style={{ color: AD }}>
-                  {(log.workouts || []).reduce((s, w) => s + (w.durationMinutes || 0), 0)}
+                  {totalMinutes}
                   <span className="text-sm font-bold" style={{ color: MU }}> min</span>
                 </div>
               </div>
             </div>
           )}
 
+          {/* ── Rest day badge ────────────────────────────────────── */}
           {log.isRestDay && (
             <div className="rounded-xl px-4 py-3 text-center font-bold" style={{ background: AL, color: AD }}>
               🛌 {t.restDay ?? 'Rest day'}
             </div>
           )}
 
-          {!log.isRestDay && (log.workouts || []).length > 0 && (
+          {/* ── Workouts grouped by category ──────────────────────── */}
+          {!log.isRestDay && workouts.length > 0 && (
             <div>
               <div className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: MU }}>{t.workouts ?? 'Workouts'}</div>
-              <div className="flex flex-col gap-2">
-                {log.workouts.map((w, i) => (
-                  <div key={i} className="rounded-xl px-4 py-3 flex items-center justify-between border" style={{ background: BG, borderColor: BO }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ background: tc(w.type) }} />
-                      <span className="text-sm font-semibold capitalize" style={{ color: TX }}>
-                        {t['category' + (w.type || '').charAt(0).toUpperCase() + (w.type || '').slice(1)] ?? w.type}
-                      </span>
+              <div className="flex flex-col gap-3">
+                {Object.entries(grouped).map(([cat, items]) => {
+                  const catDur = categoryDurations.find((c) => c.type === cat)?.durationMinutes || 0;
+                  return (
+                    <div key={cat} className="rounded-xl border overflow-hidden" style={{ background: BG, borderColor: BO }}>
+                      <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: BO, background: tc(cat) + '11' }}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ background: tc(cat) }} />
+                          <span className="text-sm font-bold capitalize" style={{ color: TX }}>{categoryLabel(cat)}</span>
+                          <span className="text-xs font-semibold" style={{ color: MU }}>· {items.length}</span>
+                        </div>
+                        {catDur > 0 && (
+                          <span className="text-xs font-bold" style={{ color: tc(cat) }}>{catDur} min</span>
+                        )}
+                      </div>
+                      <div className="flex flex-col">
+                        {items.map((w, i) => {
+                          const setsReps = (w.sets && w.reps) ? `${w.sets} × ${w.reps}` : null;
+                          const weightStr = w.weight ? `@ ${w.weight} ${t.kg ?? 'kg'}` : null;
+                          const durStr = w.durationMinutes ? `${w.durationMinutes} ${t.minutes ?? 'min'}` : null;
+                          const detail = [setsReps, weightStr, durStr].filter(Boolean).join(' · ');
+                          return (
+                            <div key={i} className="px-4 py-2 flex flex-col gap-0.5 border-t first:border-t-0" style={{ borderColor: BO + '60' }}>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold" style={{ color: TX }}>
+                                  {w.exerciseName || w.name || categoryLabel(cat)}
+                                </span>
+                                {detail && <span className="text-xs font-medium" style={{ color: MU }}>{detail}</span>}
+                              </div>
+                              {w.note && (
+                                <span className="text-xs italic" style={{ color: MU }}>"{w.note}"</span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <span className="text-xs font-bold" style={{ color: tc(w.type) }}>{w.durationMinutes} min</span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
 
+          {/* ── Wellbeing 5-stat strip (existing pattern) ─────────── */}
           <div className="grid grid-cols-5 gap-2">
             {[
-              { label: t.effort ?? 'Effort', val: log.effort, icon: '⚡', color: '#F59E0B' },
-              { label: t.mood ?? 'Mood', val: log.mood, icon: '😊', color: '#4A7AB5' },
-              { label: t.energy ?? 'Energy', val: log.energy, icon: '🔋', color: '#22C55E' },
-              { label: t.sleep ?? 'Sleep', val: log.sleepQuality, icon: '💤', color: '#A855F7' },
-              { label: t.soreness ?? 'Soreness', val: log.soreness, icon: '🔥', color: '#EF4444' },
+              { label: t.effort   ?? 'Effort',   val: log.effort,       icon: '⚡', color: '#F59E0B' },
+              { label: t.mood     ?? 'Mood',     val: log.mood,         icon: '😊', color: '#4A7AB5' },
+              { label: t.energy   ?? 'Energy',   val: log.energy,       icon: '🔋', color: '#22C55E' },
+              { label: t.sleep    ?? 'Sleep',    val: log.sleepQuality, icon: '💤', color: '#A855F7' },
+              { label: t.soreness ?? 'Soreness', val: log.soreness,     icon: '🔥', color: '#EF4444' },
             ].map((s) => (
               <div key={s.label} className="rounded-xl p-2 text-center border" style={{ background: BG, borderColor: BO }}>
                 <div className="text-sm">{s.icon}</div>
@@ -213,6 +290,26 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             ))}
           </div>
 
+          {/* ── Stress + sleep hours (rendered together) ─────────── */}
+          <Stats items={[
+            { label: t.stress     ?? 'Stress',      val: log.stress,     unit: '/5' },
+            { label: t.sleepHours ?? 'Sleep hours', val: log.sleepHours, unit: 'h'  },
+          ]} />
+
+          {/* ── Body ──────────────────────────────────────────────── */}
+          <Stats items={[
+            { label: t.weight ?? 'Weight', val: log.weightKg, unit: 'kg' },
+            { label: t.waist  ?? 'Waist',  val: log.waistCm,  unit: 'cm' },
+          ]} />
+
+          {/* ── Nutrition ─────────────────────────────────────────── */}
+          <Stats items={[
+            { label: t.meals ?? 'Meals on plan', val: log.mealsOnPlan,  unit: null },
+            { label: t.water ?? 'Water',         val: log.waterGlasses, unit: '×'  },
+            { label: t.steps ?? 'Steps',         val: log.steps,        unit: null },
+          ]} />
+
+          {/* ── Note (existing) ──────────────────────────────────── */}
           {includeNotes && log.note && (
             <div>
               <div className="text-[10px] font-bold tracking-widest uppercase mb-2" style={{ color: MU }}>{t.note ?? 'Note'}</div>
