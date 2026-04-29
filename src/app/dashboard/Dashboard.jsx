@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getTranslations } from "@/src/lib/translations";
 import HistoryTab from "./HistoryTab";
 import GraphsTab from "./GraphsTab";
+import { getCatalogItemName } from '@/src/lib/exerciseCatalog';
 
 const A = "#4A7AB5",
   AD = "#2D4A6E",
@@ -396,13 +397,10 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
                               style={{ borderColor: BO + "60" }}
                             >
                               <div className="flex items-center justify-between">
-                                <span
-                                  className="text-sm font-semibold"
-                                  style={{ color: TX }}
-                                >
-                                  {w.exerciseName ||
-                                    w.name ||
-                                    categoryLabel(cat)}
+                                 <span className="text-sm font-semibold" style={{ color: TX }}>
+                                  {w.exerciseSlug
+                                    ? getCatalogItemName(w.exerciseSlug, t)
+                                    : (w.exerciseName || w.name || categoryLabel(cat))}
                                 </span>
                                 {detail && (
                                   <span
