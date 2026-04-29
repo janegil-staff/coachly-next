@@ -200,7 +200,7 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
               { label: t.effort ?? 'Effort', val: log.effort, icon: '⚡', color: '#F59E0B' },
               { label: t.mood ?? 'Mood', val: log.mood, icon: '😊', color: '#4A7AB5' },
               { label: t.energy ?? 'Energy', val: log.energy, icon: '🔋', color: '#22C55E' },
-              { label: t.sleep ?? 'Sleep', val: log.sleepQuality, icon: '💤', color: '#A855F7' },
+              { label: t.sleep ?? 'Sleep', val: log.sleep, icon: '💤', color: '#A855F7' },
               { label: t.soreness ?? 'Soreness', val: log.soreness, icon: '🔥', color: '#EF4444' },
             ].map((s) => (
               <div key={s.label} className="rounded-xl p-2 text-center border" style={{ background: BG, borderColor: BO }}>
@@ -544,7 +544,7 @@ function CalendarTab({ logs, scores, latestHooper, latestRestq, t, includeNotes 
       effort: avg('effort', true),
       mood: avg('mood'),
       energy: avg('energy'),
-      sleep: avg('sleepQuality'),
+      sleep: avg('sleep'),
       soreness: avg('soreness'),
       totalMinutes,
       sessions: monthLogs.filter((l) => !l.isRestDay && (l.workouts || []).length > 0).length,
