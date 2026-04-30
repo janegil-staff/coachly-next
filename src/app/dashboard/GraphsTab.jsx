@@ -50,7 +50,7 @@ export default function GraphsTab({ logs, scores, t }) {
   // Sleep quality + soreness
   const sleepSorenessData = sortedLogs.map((l) => ({
     date: l.date.slice(5),
-    sleep: l.sleep ?? null,
+    sleep: l.sleepQuality ?? null,
     soreness: l.soreness ?? null,
   }));
 

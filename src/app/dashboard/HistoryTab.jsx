@@ -105,7 +105,7 @@ function HistoryRow({ log, score, t, includeNotes }) {
               { label: t.effort ?? 'Effort', val: log.effort, color: '#F59E0B' },
               { label: t.mood ?? 'Mood', val: log.mood, color: '#4A7AB5' },
               { label: t.energy ?? 'Energy', val: log.energy, color: '#22C55E' },
-              { label: t.sleep ?? 'Sleep', val: log.sleep, color: '#A855F7' },
+              { label: t.sleep ?? 'Sleep', val: log.sleepQuality, color: '#A855F7' },
               { label: t.soreness ?? 'Soreness', val: log.soreness, color: '#EF4444' },
             ].map((m) => (
               <div key={m.label} className="flex-1 text-center">

@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { getTranslations } from "@/src/lib/translations";
 import HistoryTab from "./HistoryTab";
 import GraphsTab from "./GraphsTab";
-import { getCatalogItemName } from '@/src/lib/exerciseCatalog';
+import PdfExportModal from "./PdfExportModal";
+import { getCatalogItemName } from "@/src/lib/exerciseCatalog";
 
 const A = "#4A7AB5",
   AD = "#2D4A6E",
@@ -55,7 +56,13 @@ function fmtDate(d) {
   const dt = new Date(d);
   return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
 }
-
+function totalMinutes(log) {
+  if (!log) return 0;
+  const cd = Array.isArray(log.categoryDurations) ? log.categoryDurations : [];
+  if (cd.length) return cd.reduce((s, c) => s + (c.durationMinutes || 0), 0);
+  const ws = Array.isArray(log.workouts) ? log.workouts : [];
+  return ws.reduce((s, w) => s + (w.durationMinutes || 0), 0);
+}
 // ── Top header bar ───────────────────────────────────────────────────────
 function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
   const Tab = ({ id, label, icon }) => {
@@ -397,10 +404,15 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
                               style={{ borderColor: BO + "60" }}
                             >
                               <div className="flex items-center justify-between">
-                                 <span className="text-sm font-semibold" style={{ color: TX }}>
+                                <span
+                                  className="text-sm font-semibold"
+                                  style={{ color: TX }}
+                                >
                                   {w.exerciseSlug
                                     ? getCatalogItemName(w.exerciseSlug, t)
-                                    : (w.exerciseName || w.name || categoryLabel(cat))}
+                                    : w.exerciseName ||
+                                      w.name ||
+                                      categoryLabel(cat)}
                                 </span>
                                 {detail && (
                                   <span
@@ -1162,11 +1174,7 @@ function CalendarTab({
                 )}
                 {hasWorkouts && (
                   <div className="text-[9px] font-bold opacity-90">
-                    {(log.workouts || []).reduce(
-                      (s, w) => s + (w.durationMinutes || 0),
-                      0,
-                    )}
-                    m
+                    {totalMinutes(log)}m
                   </div>
                 )}
                 {hasNote && (
@@ -1387,13 +1395,12 @@ function CalendarTab({
     </div>
   );
 }
-
 // ── Main Dashboard with tabs ─────────────────────────────────────────────
 export default function Dashboard({ report, lang, code }) {
   const router = useRouter();
   const t = useMemo(() => getTranslations(lang), [lang]);
   const [tab, setTab] = useState("calendar");
-  const [pdfBusy, setPdfBusy] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
 
   const {
     client,
@@ -1405,36 +1412,6 @@ export default function Dashboard({ report, lang, code }) {
     includeNotes,
   } = report;
   const profile = client?.profile ?? {};
-
-  const handlePdf = async () => {
-    if (!code) return alert("No code in session");
-    setPdfBusy(true);
-    try {
-      const url = "/api/pdf?code=" + encodeURIComponent(code) + "&lang=" + lang;
-      const res = await fetch(url);
-      if (!res.ok) {
-        if (res.status === 404) {
-          alert("PDF generation is not yet implemented. Coming soon.");
-        } else {
-          alert("PDF error: " + res.status);
-        }
-        return;
-      }
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = "coachly-report-" + code + ".pdf";
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(blobUrl);
-    } catch (e) {
-      alert("PDF error: " + e.message);
-    } finally {
-      setPdfBusy(false);
-    }
-  };
 
   const handleSignOut = () => {
     sessionStorage.removeItem("coachlyReport");
@@ -1449,10 +1426,10 @@ export default function Dashboard({ report, lang, code }) {
         tab={tab}
         setTab={setTab}
         profile={profile}
-        onPdf={handlePdf}
+        onPdf={() => setShowPdfModal(true)}
         onSignOut={handleSignOut}
         t={t}
-        pdfBusy={pdfBusy}
+        pdfBusy={false}
       />
 
       <div className="px-4 py-6">
@@ -1476,6 +1453,14 @@ export default function Dashboard({ report, lang, code }) {
         )}
         {tab === "graphs" && <GraphsTab logs={logs} scores={scores} t={t} />}
       </div>
+
+      {showPdfModal && (
+        <PdfExportModal
+          data={report}
+          t={t}
+          onClose={() => setShowPdfModal(false)}
+        />
+      )}
     </main>
   );
 }
