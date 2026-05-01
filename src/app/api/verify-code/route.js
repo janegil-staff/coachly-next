@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   const { code, language } = await req.json();
-  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+  const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://goldfish-app-8zz97.ondigitalocean.app';
 
   const url = language
     ? `${apiBase}/api/share/${code}?language=${encodeURIComponent(language)}`

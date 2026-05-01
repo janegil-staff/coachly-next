@@ -1,5 +1,5 @@
 // lib/api.js
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://goldfish-app-8zz97.ondigitalocean.app';
 
 export async function fetchShareReport(code) {
   const res = await fetch(API_BASE + '/api/share/' + encodeURIComponent(code), {

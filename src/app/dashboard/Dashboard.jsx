@@ -6,7 +6,7 @@ import { getTranslations } from "@/src/lib/translations";
 import HistoryTab from "./HistoryTab";
 import GraphsTab from "./GraphsTab";
 import PdfExportModal from "./PdfExportModal";
-import { getCatalogItemName } from "@/src/lib/exerciseCatalog";
+import { getCatalogItemName } from "@/lib/exerciseCatalog";
 
 const A = "#4A7AB5",
   AD = "#2D4A6E",
@@ -1421,7 +1421,7 @@ export default function Dashboard({ report, lang, code }) {
   };
 
   return (
-    <main className="min-h-screen" style={{ background: BG }}>
+    <main className="min-h-screen">
       <HeaderBar
         tab={tab}
         setTab={setTab}
