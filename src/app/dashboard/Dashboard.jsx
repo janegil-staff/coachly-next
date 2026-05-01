@@ -2,11 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { getTranslations } from "@/src/lib/translations";
 import HistoryTab from "./HistoryTab";
 import GraphsTab from "./GraphsTab";
 import PdfExportModal from "./PdfExportModal";
 import { getCatalogItemName } from "@/lib/exerciseCatalog";
+import { getTranslations } from "@/lib/translations";
 
 const A = "#4A7AB5",
   AD = "#2D4A6E",
