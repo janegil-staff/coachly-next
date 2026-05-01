@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { LANGUAGES, getTranslations } from "@/src/lib/translations";
+import { getTranslations, LANGUAGES } from "@/lib/translations";
 
 export default function HomePage() {
   const router = useRouter();
