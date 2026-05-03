@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       <header className="mb-10 border-b border-slate-200 pb-6">
         <h1 className="text-3xl font-bold text-slate-900">Privacy Policy</h1>
         <p className="mt-2 text-sm text-slate-500">
-          Last updated: {`{{LAST_UPDATED}}`}
+          Last updated: 03 May 2026
         </p>
         <p className="mt-4 text-base leading-relaxed">
           This Privacy Policy explains how Qup DA collects, uses, and protects
@@ -252,7 +252,7 @@ export default function PrivacyPage() {
             href={`mailto:${"{{CONTACT_EMAIL}}"}`}
             className="text-blue-700 underline hover:text-blue-900"
           >
-            {`{{CONTACT_EMAIL}}`}
+            jan.egil.staff@qupda.com
           </a>{" "}
           and we will respond within 30 days.
         </p>
@@ -347,10 +347,10 @@ export default function PrivacyPage() {
           Norway
           <br />
           <a
-            href={`mailto:${"{{CONTACT_EMAIL}}"}`}
+            href={`mailto:jan.egil.staff@qupda.com`}
             className="text-blue-700 underline hover:text-blue-900"
           >
-            {`{{CONTACT_EMAIL}}`}
+            jan.egil.staff@qupda.com
           </a>
         </address>
       </Section>
