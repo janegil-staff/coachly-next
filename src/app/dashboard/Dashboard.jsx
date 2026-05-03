@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import HistoryTab from "./HistoryTab";
 import GraphsTab from "./GraphsTab";
 import PdfExportModal from "./PdfExportModal";
+import AdviceCards from "./AdviceCards";
 import { getCatalogItemName } from "@/lib/exerciseCatalog";
 import { getTranslations } from "@/lib/translations";
+import QuestionnaireCard from "@/components/dashboard/QuestionnaireCard";
 
 const A = "#4A7AB5",
   AD = "#2D4A6E",
@@ -63,6 +65,14 @@ function totalMinutes(log) {
   const ws = Array.isArray(log.workouts) ? log.workouts : [];
   return ws.reduce((s, w) => s + (w.durationMinutes || 0), 0);
 }
+
+const GOALS_STATUS_COLORS = {
+  stalled: "#EF4444",
+  drifting: "#F59E0B",
+  ontrack: "#4A7AB5",
+  strong: "#22C55E",
+};
+
 // ── Top header bar ───────────────────────────────────────────────────────
 function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
   const Tab = ({ id, label, icon }) => {
@@ -88,7 +98,6 @@ function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
       style={{ background: SU, borderColor: BO }}
     >
       <div className="px-6 pt-3 pb-0 flex items-center justify-between">
-        {/* Left: logo + name */}
         <div className="flex items-center gap-2">
           <img
             src="/coachly-logo.png"
@@ -105,7 +114,6 @@ function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
           </div>
         </div>
 
-        {/* Right: profile chips + PDF + Sign out */}
         <div className="flex items-center gap-2">
           {profile?.age != null && (
             <span
@@ -157,7 +165,6 @@ function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
         </div>
       </div>
 
-      {/* Tabs row */}
       <div className="px-6 flex gap-1">
         <Tab id="calendar" label={t.calendar ?? "Calendar"} icon="📅" />
         <Tab id="history" label={t.history ?? "History"} icon="📋" />
@@ -169,12 +176,9 @@ function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
 
 // ── Day modal ────────────────────────────────────────────────────────────
 function DayModal({ date, log, score, onClose, t, includeNotes }) {
-  // DayModal v2 — expanded
   if (!log) return null;
   const bucket = bucketOf(score?.compositeScore);
 
-  // Workouts grouped by category, then by name within category.
-  // Falls back to legacy shape (just type+name) when sets/reps/weight aren't present.
   const workouts = Array.isArray(log.workouts) ? log.workouts : [];
   const categoryDurations = Array.isArray(log.categoryDurations)
     ? log.categoryDurations
@@ -196,7 +200,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
     return t[k] ?? type;
   };
 
-  // Helper: tiny pill row of "label · value" pairs, only renders pairs with a value
   const Stats = ({ items }) => {
     const visible = items.filter(
       (it) => it.val !== null && it.val !== undefined && it.val !== "",
@@ -264,7 +267,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
         </div>
 
         <div className="p-5 flex flex-col gap-4">
-          {/* ── Score + total minutes ─────────────────────────────── */}
           {score && (
             <div className="flex items-stretch gap-3">
               <div
@@ -284,7 +286,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
                   className="text-3xl font-black leading-none mt-1"
                   style={{ color: AD }}
                 >
-                  {/* // score display: bucket + raw */}
                   {bucket != null ? bucket : "—"}
                   <span className="text-sm font-bold" style={{ color: MU }}>
                     /5
@@ -323,7 +324,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             </div>
           )}
 
-          {/* ── Rest day badge ────────────────────────────────────── */}
           {log.isRestDay && (
             <div
               className="rounded-xl px-4 py-3 text-center font-bold"
@@ -333,7 +333,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             </div>
           )}
 
-          {/* ── Workouts grouped by category ──────────────────────── */}
           {!log.isRestDay && workouts.length > 0 && (
             <div>
               <div
@@ -442,38 +441,16 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             </div>
           )}
 
-          {/* ── Wellbeing 5-stat strip (existing pattern) ─────────── */}
           <div className="grid grid-cols-5 gap-2">
             {[
-              {
-                label: t.effort ?? "Effort",
-                val: log.effort,
-                icon: "⚡",
-                color: "#F59E0B",
-              },
-              {
-                label: t.mood ?? "Mood",
-                val: log.mood,
-                icon: "😊",
-                color: "#4A7AB5",
-              },
-              {
-                label: t.energy ?? "Energy",
-                val: log.energy,
-                icon: "🔋",
-                color: "#22C55E",
-              },
-              {
-                label: t.sleep ?? "Sleep",
-                val: log.sleepQuality,
-                icon: "💤",
-                color: "#A855F7",
-              },
+              { label: t.effort ?? "Effort", val: log.effort, icon: "⚡" },
+              { label: t.mood ?? "Mood", val: log.mood, icon: "😊" },
+              { label: t.energy ?? "Energy", val: log.energy, icon: "🔋" },
+              { label: t.sleep ?? "Sleep", val: log.sleepQuality, icon: "💤" },
               {
                 label: t.soreness ?? "Soreness",
                 val: log.soreness,
                 icon: "🔥",
-                color: "#EF4444",
               },
             ].map((s) => (
               <div
@@ -498,7 +475,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             ))}
           </div>
 
-          {/* ── Stress + sleep hours (rendered together) ─────────── */}
           <Stats
             items={[
               { label: t.stress ?? "Stress", val: log.stress, unit: "/5" },
@@ -510,7 +486,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             ]}
           />
 
-          {/* ── Body ──────────────────────────────────────────────── */}
           <Stats
             items={[
               { label: t.weight ?? "Weight", val: log.weightKg, unit: "kg" },
@@ -518,7 +493,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             ]}
           />
 
-          {/* ── Nutrition ─────────────────────────────────────────── */}
           <Stats
             items={[
               {
@@ -531,7 +505,6 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
             ]}
           />
 
-          {/* ── Note (existing) ──────────────────────────────────── */}
           {includeNotes && log.note && (
             <div>
               <div
@@ -554,47 +527,24 @@ function DayModal({ date, log, score, onClose, t, includeNotes }) {
   );
 }
 
-// ── Hooper detail modal ──────────────────────────────────────────────────
-const HOOPER_QUESTIONS = [
+// ── Goals detail modal ───────────────────────────────────────────────────
+const GOALS_QUESTIONS = [
+  { qKey: "goalsQ1", fallback: "Goals are clear and specific" },
+  { qKey: "goalsQ2", fallback: "Making real progress" },
+  { qKey: "goalsQ3", fallback: "Feeling motivated" },
   {
-    qKey: "hooperQSleep",
-    lowKey: "hooperScale1",
-    highKey: "hooperScale7",
-    fallback: "Sleep quality",
+    qKey: "goalsQ4",
+    fallback: "Things outside my control are getting in the way",
   },
-  {
-    qKey: "hooperQFatigue",
-    lowKey: "hooperScaleFatigue1",
-    highKey: "hooperScaleFatigue7",
-    fallback: "Fatigue",
-  },
-  {
-    qKey: "hooperQStress",
-    lowKey: "hooperScaleStress1",
-    highKey: "hooperScaleStress7",
-    fallback: "Stress",
-  },
-  {
-    qKey: "hooperQSoreness",
-    lowKey: "hooperScaleSoreness1",
-    highKey: "hooperScaleSoreness7",
-    fallback: "Muscle soreness",
-  },
+  { qKey: "goalsQ5", fallback: "Have the support I need" },
 ];
 
-const HOOPER_STATUS_COLORS = {
-  fresh: "#22C55E",
-  normal: "#4A7AB5",
-  strained: "#F59E0B",
-  overreaching: "#EF4444",
-};
-
-function HooperDetailModal({ data, onClose, t }) {
+function GoalsDetailModal({ data, onClose, t }) {
   if (!data) return null;
   const s = data.scores || {};
   const answers = Array.isArray(data.answers) ? data.answers : [];
-  const statusKey = "hooperStatus_" + (s.status ?? "normal");
-  const color = HOOPER_STATUS_COLORS[s.status] ?? A;
+  const statusKey = "goalsStatus_" + (s.status ?? "ontrack");
+  const color = GOALS_STATUS_COLORS[s.status] ?? A;
 
   return (
     <div
@@ -613,7 +563,7 @@ function HooperDetailModal({ data, onClose, t }) {
         >
           <div>
             <div className="text-[10px] font-bold tracking-widest uppercase opacity-70">
-              {t.hooperTitle ?? "Daily check-in"} (Hooper)
+              {t.goalsTitle ?? "Goal Check-in"}
             </div>
             <div className="text-lg font-bold">{data.date ?? "—"}</div>
           </div>
@@ -627,7 +577,6 @@ function HooperDetailModal({ data, onClose, t }) {
         </div>
 
         <div className="p-5 flex flex-col gap-4">
-          {/* Total + status */}
           <div
             className="rounded-xl p-4 border flex items-center justify-between"
             style={{ background: color + "15", borderColor: color + "55" }}
@@ -643,9 +592,9 @@ function HooperDetailModal({ data, onClose, t }) {
                 className="text-3xl font-black leading-none mt-1"
                 style={{ color }}
               >
-                {s.total ?? "—"}
+                {s.avg ?? "—"}
                 <span className="text-sm font-bold ml-1" style={{ color: MU }}>
-                  /28
+                  /5
                 </span>
               </div>
             </div>
@@ -657,7 +606,6 @@ function HooperDetailModal({ data, onClose, t }) {
             </div>
           </div>
 
-          {/* Per-question answers */}
           <div>
             <div
               className="text-[10px] font-bold tracking-widest uppercase mb-2"
@@ -666,7 +614,7 @@ function HooperDetailModal({ data, onClose, t }) {
               {t.answers ?? "Answers"}
             </div>
             <div className="flex flex-col gap-2">
-              {HOOPER_QUESTIONS.map((q, i) => {
+              {GOALS_QUESTIONS.map((q, i) => {
                 const val = answers[i];
                 return (
                   <div
@@ -674,9 +622,9 @@ function HooperDetailModal({ data, onClose, t }) {
                     className="rounded-xl px-4 py-3 border"
                     style={{ background: BG, borderColor: BO }}
                   >
-                    <div className="flex items-center justify-between gap-3 mb-1">
+                    <div className="flex items-center justify-between gap-3">
                       <span
-                        className="text-xs font-semibold"
+                        className="text-xs font-semibold flex-1"
                         style={{ color: TX }}
                       >
                         {t[q.qKey] ?? q.fallback}
@@ -687,17 +635,10 @@ function HooperDetailModal({ data, onClose, t }) {
                           className="text-[10px] font-bold ml-0.5"
                           style={{ color: MU }}
                         >
-                          /7
+                          /5
                         </span>
                       </span>
                     </div>
-                    <div
-                      className="flex items-center justify-between text-[9px]"
-                      style={{ color: MU }}
-                    >
-                      <span>1 · {t[q.lowKey] ?? "Low"}</span>
-                      <span>{t[q.highKey] ?? "High"} · 7</span>
-                    </div>
                   </div>
                 );
               })}
@@ -709,168 +650,25 @@ function HooperDetailModal({ data, onClose, t }) {
   );
 }
 
-// ── RESTQ detail modal ───────────────────────────────────────────────────
-function RestqDetailModal({ data, onClose, t }) {
-  if (!data) return null;
-  const s = data.scores || {};
-  const answers = Array.isArray(data.answers) ? data.answers : [];
-
-  return (
-    <div
-      onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: "rgba(15,30,50,0.6)", backdropFilter: "blur(5px)" }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl shadow-2xl border"
-        style={{ background: SU, borderColor: BO }}
-      >
-        <div
-          className="sticky top-0 flex items-center justify-between px-5 py-4 text-white"
-          style={{ background: `linear-gradient(135deg, ${A}, ${AD})` }}
-        >
-          <div>
-            <div className="text-[10px] font-bold tracking-widest uppercase opacity-70">
-              {t.restqTitle ?? "Recovery-Stress"} (RESTQ)
-            </div>
-            <div className="text-lg font-bold">{data.date ?? "—"}</div>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center text-xl"
-            style={{ background: "rgba(255,255,255,0.2)" }}
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="p-5 flex flex-col gap-4">
-          {/* Stress / Recovery / Balance summary */}
-          <div className="grid grid-cols-3 gap-2">
-            <div
-              className="rounded-xl px-3 py-3 text-center border"
-              style={{ background: "#EF444415", borderColor: "#EF444455" }}
-            >
-              <div
-                className="text-[9px] font-bold uppercase tracking-wider"
-                style={{ color: MU }}
-              >
-                {t.restqStress ?? "Stress"}
-              </div>
-              <div
-                className="text-2xl font-black leading-none mt-1"
-                style={{ color: "#EF4444" }}
-              >
-                {s.stress ?? "—"}
-              </div>
-            </div>
-            <div
-              className="rounded-xl px-3 py-3 text-center border"
-              style={{ background: "#22C55E15", borderColor: "#22C55E55" }}
-            >
-              <div
-                className="text-[9px] font-bold uppercase tracking-wider"
-                style={{ color: MU }}
-              >
-                {t.restqRecovery ?? "Recovery"}
-              </div>
-              <div
-                className="text-2xl font-black leading-none mt-1"
-                style={{ color: "#22C55E" }}
-              >
-                {s.recovery ?? "—"}
-              </div>
-            </div>
-            <div
-              className="rounded-xl px-3 py-3 text-center border"
-              style={{ background: A + "15", borderColor: A + "55" }}
-            >
-              <div
-                className="text-[9px] font-bold uppercase tracking-wider"
-                style={{ color: MU }}
-              >
-                {t.restqBalance ?? "Balance"}
-              </div>
-              <div
-                className="text-2xl font-black leading-none mt-1"
-                style={{ color: A }}
-              >
-                {s.balance != null
-                  ? (s.balance >= 0 ? "+" : "") + s.balance
-                  : "—"}
-              </div>
-            </div>
-          </div>
-
-          {/* Per-item answers */}
-          <div>
-            <div
-              className="text-[10px] font-bold tracking-widest uppercase mb-2"
-              style={{ color: MU }}
-            >
-              {t.answers ?? "Answers"}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              {answers.map((val, i) => {
-                const itemKey = "restq_item_" + (i + 1);
-                return (
-                  <div
-                    key={i}
-                    className="rounded-lg px-3 py-2 border flex items-center gap-3"
-                    style={{ background: BG, borderColor: BO }}
-                  >
-                    <span
-                      className="text-[10px] font-bold flex-shrink-0 w-6 text-center"
-                      style={{ color: A }}
-                    >
-                      {i + 1}.
-                    </span>
-                    <span className="text-xs flex-1" style={{ color: TX }}>
-                      {t[itemKey] ?? "Item " + (i + 1)}
-                    </span>
-                    <span
-                      className="text-sm font-black flex-shrink-0"
-                      style={{ color: A }}
-                    >
-                      {val ?? "—"}
-                      <span
-                        className="text-[9px] font-bold ml-0.5"
-                        style={{ color: MU }}
-                      >
-                        /6
-                      </span>
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Hooper / RESTQ side cards ────────────────────────────────────────────
-function HooperCard({ data, t, onReadMore }) {
+// ── Goals side card ──────────────────────────────────────────────────────
+function GoalsCard({ data, t, onReadMore }) {
   if (!data)
     return (
       <div className="text-xs" style={{ color: MU }}>
-        {t.noHooper ?? "Not completed"}
+        {t.goalsNever ?? "Not completed"}
       </div>
     );
   const s = data.scores || {};
-  const statusKey = "hooperStatus_" + (s.status ?? "normal");
-  const color = HOOPER_STATUS_COLORS[s.status] ?? A;
+  const statusKey = "goalsStatus_" + (s.status ?? "ontrack");
+  const color = GOALS_STATUS_COLORS[s.status] ?? A;
   return (
     <>
       <div className="flex items-center justify-between mt-2">
         <div>
           <div className="text-2xl font-black" style={{ color }}>
-            {s.total ?? "—"}
+            {s.avg ?? "—"}
             <span className="text-xs font-bold ml-1" style={{ color: MU }}>
-              /28
+              /5
             </span>
           </div>
           <div
@@ -895,76 +693,18 @@ function HooperCard({ data, t, onReadMore }) {
   );
 }
 
-function RestqCard({ data, t, onReadMore }) {
-  if (!data)
-    return (
-      <div className="text-xs" style={{ color: MU }}>
-        {t.noRestq ?? "Not completed"}
-      </div>
-    );
-  const s = data.scores || {};
-  return (
-    <>
-      <div className="mt-2">
-        <div className="grid grid-cols-3 gap-2">
-          <div className="text-center">
-            <div className="text-xl font-black" style={{ color: "#EF4444" }}>
-              {s.stress ?? "—"}
-            </div>
-            <div
-              className="text-[9px] uppercase tracking-wider font-bold"
-              style={{ color: MU }}
-            >
-              {t.restqStress ?? "Stress"}
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-black" style={{ color: "#22C55E" }}>
-              {s.recovery ?? "—"}
-            </div>
-            <div
-              className="text-[9px] uppercase tracking-wider font-bold"
-              style={{ color: MU }}
-            >
-              {t.restqRecovery ?? "Recovery"}
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-xl font-black" style={{ color: A }}>
-              {s.balance != null
-                ? (s.balance >= 0 ? "+" : "") + s.balance
-                : "—"}
-            </div>
-            <div
-              className="text-[9px] uppercase tracking-wider font-bold"
-              style={{ color: MU }}
-            >
-              {t.restqBalance ?? "Balance"}
-            </div>
-          </div>
-        </div>
-        <div className="text-right text-[10px] mt-2" style={{ color: MU }}>
-          {data.date}
-        </div>
-      </div>
-      <button
-        onClick={onReadMore}
-        className="mt-3 text-[11px] font-bold uppercase tracking-wider"
-        style={{ color: A }}
-      >
-        {t.readMore ?? "Read more"} →
-      </button>
-    </>
-  );
-}
-
-// ── Calendar tab content (was the main dashboard view) ──────────────────
+// ── Calendar tab content ────────────────────────────────────────────────
 function CalendarTab({
   logs,
   scores,
   latestHooper,
   latestRestq,
+  latestGoals,
+  latestPss10,
+  latestPsqi,
+  latestIpaq,
   t,
+  lang,
   includeNotes,
 }) {
   const [month, setMonth] = useState(() => {
@@ -972,8 +712,7 @@ function CalendarTab({
     return { y: n.getFullYear(), m: n.getMonth() };
   });
   const [modalDate, setModalDate] = useState(null);
-  const [hooperOpen, setHooperOpen] = useState(false);
-  const [restqOpen, setRestqOpen] = useState(false);
+  const [goalsOpen, setGoalsOpen] = useState(false);
 
   const logByDate = useMemo(() => {
     const m = {};
@@ -1086,196 +825,208 @@ function CalendarTab({
 
   return (
     <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* LEFT: Calendar */}
-      <div
-        className="rounded-2xl border shadow-sm overflow-hidden"
-        style={{ background: SU, borderColor: BO }}
-      >
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <button
-            onClick={() =>
-              setMonth((p) => {
-                const d = new Date(p.y, p.m - 1);
-                return { y: d.getFullYear(), m: d.getMonth() };
-              })
-            }
-            className="w-7 h-7 rounded-md border flex items-center justify-center"
-            style={{ borderColor: BO, color: MU }}
-          >
-            ‹
-          </button>
-          <span
-            className="text-xs font-bold tracking-widest uppercase"
-            style={{ color: A }}
-          >
-            {months[m]} {y}
-          </span>
-          <button
-            onClick={() =>
-              setMonth((p) => {
-                const d = new Date(p.y, p.m + 1);
-                return { y: d.getFullYear(), m: d.getMonth() };
-              })
-            }
-            className="w-7 h-7 rounded-md border flex items-center justify-center"
-            style={{ borderColor: BO, color: MU }}
-          >
-            ›
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 gap-0.5 px-3">
-          {weekdays.map((d, i) => (
-            <div
-              key={i}
-              className="text-center text-[9px] font-bold pb-1"
-              style={{ color: MU }}
+      {/* LEFT: Calendar + Insights stacked */}
+      <div className="flex flex-col gap-4">
+        <div
+          className="rounded-2xl border shadow-sm overflow-hidden"
+          style={{ background: SU, borderColor: BO }}
+        >
+          <div className="flex items-center justify-between px-4 pt-3 pb-2">
+            <button
+              onClick={() =>
+                setMonth((p) => {
+                  const d = new Date(p.y, p.m - 1);
+                  return { y: d.getFullYear(), m: d.getMonth() };
+                })
+              }
+              className="w-7 h-7 rounded-md border flex items-center justify-center"
+              style={{ borderColor: BO, color: MU }}
             >
-              {d}
-            </div>
-          ))}
-        </div>
+              ‹
+            </button>
+            <span
+              className="text-xs font-bold tracking-widest uppercase"
+              style={{ color: A }}
+            >
+              {months[m]} {y}
+            </span>
+            <button
+              onClick={() =>
+                setMonth((p) => {
+                  const d = new Date(p.y, p.m + 1);
+                  return { y: d.getFullYear(), m: d.getMonth() };
+                })
+              }
+              className="w-7 h-7 rounded-md border flex items-center justify-center"
+              style={{ borderColor: BO, color: MU }}
+            >
+              ›
+            </button>
+          </div>
 
-        <div className="grid grid-cols-7 gap-0.5 px-3 pb-3">
-          {Array.from({ length: firstDay }).map((_, i) => (
-            <div key={"e" + i} />
-          ))}
-          {Array.from({ length: days }).map((_, i) => {
-            const day = i + 1;
-            const ds = `${y}-${pad(m + 1)}-${pad(day)}`;
-            const log = logByDate[ds];
-            const score = scoreByDate[ds];
-            const bucket = bucketOf(score?.compositeScore);
-            const isToday = ds === todayStr;
-            const hasNote = includeNotes && !!log?.note?.trim();
-            const hasWorkouts = (log?.workouts || []).length > 0;
-
-            return (
+          <div className="grid grid-cols-7 gap-0.5 px-3">
+            {weekdays.map((d, i) => (
               <div
-                key={day}
-                onClick={() => log && setModalDate(ds)}
-                className="relative rounded-md py-1 text-center"
-                style={{
-                  minHeight: 32,
-                  background: bucket ? BUCKET_COLORS[bucket] : "transparent",
-                  color: log ? "#fff" : MU,
-                  border: isToday
-                    ? `2px solid ${A}`
-                    : `1px solid ${log ? "transparent" : BO}`,
-                  cursor: log ? "pointer" : "default",
-                }}
+                key={i}
+                className="text-center text-[9px] font-bold pb-1"
+                style={{ color: MU }}
               >
-                <div className="text-[10px] font-bold leading-tight">{day}</div>
-                {log?.isRestDay && (
-                  <span className="absolute -top-2 -right-2 text-lg">🛌</span>
-                )}
-                {log?.effort > 4 && (
-                  <span className="absolute -top-2 -left-2 text-lg">⚡</span>
-                )}
-                {hasWorkouts && (
-                  <div className="text-[9px] font-bold opacity-90">
-                    {totalMinutes(log)}m
-                  </div>
-                )}
-                {hasNote && (
-                  <svg
-                    className="absolute -bottom-2 -right-2"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 10 10"
-                    fill="none"
-                    style={{ zIndex: 10 }}
-                  >
-                    <rect
-                      x="1"
-                      y="1"
-                      width="8"
-                      height="6"
-                      rx="1.5"
-                      fill="#4a9eca"
-                    />
-                    <polygon points="5.5,7 8,7 8,9.5" fill="#4a9eca" />
-                  </svg>
-                )}
-                {log?.soreness >= 4 && (
-                  <span
-                    className="absolute -bottom-2 -left-2 text-lg"
-                    style={{ zIndex: 10 }}
-                  >
-                    🔥
-                  </span>
-                )}
+                {d}
               </div>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        <div
-          className="px-4 py-2 flex flex-wrap gap-2 border-t"
-          style={{ borderColor: BO }}
-        >
-          {[
-            [5, t.great ?? "Great"],
-            [4, t.good ?? "Good"],
-            [3, t.ok ?? "OK"],
-            [2, t.poor ?? "Poor"],
-            [1, t.bad ?? "Bad"],
-          ].map(([b, lbl]) => (
-            <div
-              key={b}
-              className="flex items-center gap-1.5 text-[10px] font-semibold"
-              style={{ color: TX }}
-            >
+          <div className="grid grid-cols-7 gap-0.5 px-3 pb-3">
+            {Array.from({ length: firstDay }).map((_, i) => (
+              <div key={"e" + i} />
+            ))}
+            {Array.from({ length: days }).map((_, i) => {
+              const day = i + 1;
+              const ds = `${y}-${pad(m + 1)}-${pad(day)}`;
+              const log = logByDate[ds];
+              const score = scoreByDate[ds];
+              const bucket = bucketOf(score?.compositeScore);
+              const isToday = ds === todayStr;
+              const hasNote = includeNotes && !!log?.note?.trim();
+              const hasWorkouts = (log?.workouts || []).length > 0;
+
+              return (
+                <div
+                  key={day}
+                  onClick={() => log && setModalDate(ds)}
+                  className="relative rounded-md py-1 text-center"
+                  style={{
+                    minHeight: 32,
+                    background: bucket ? BUCKET_COLORS[bucket] : "transparent",
+                    color: log ? "#fff" : MU,
+                    border: isToday
+                      ? `2px solid ${A}`
+                      : `1px solid ${log ? "transparent" : BO}`,
+                    cursor: log ? "pointer" : "default",
+                  }}
+                >
+                  <div className="text-[10px] font-bold leading-tight">
+                    {day}
+                  </div>
+                  {log?.isRestDay && (
+                    <span className="absolute -top-2 -right-2 text-lg">🛌</span>
+                  )}
+                  {log?.effort > 4 && (
+                    <span className="absolute -top-2 -left-2 text-lg">⚡</span>
+                  )}
+                  {hasWorkouts && (
+                    <div className="text-[9px] font-bold opacity-90">
+                      {totalMinutes(log)}m
+                    </div>
+                  )}
+                  {hasNote && (
+                    <svg
+                      className="absolute -bottom-2 -right-2"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 10 10"
+                      fill="none"
+                      style={{ zIndex: 10 }}
+                    >
+                      <rect
+                        x="1"
+                        y="1"
+                        width="8"
+                        height="6"
+                        rx="1.5"
+                        fill="#4a9eca"
+                      />
+                      <polygon points="5.5,7 8,7 8,9.5" fill="#4a9eca" />
+                    </svg>
+                  )}
+                  {log?.soreness >= 4 && (
+                    <span
+                      className="absolute -bottom-2 -left-2 text-lg"
+                      style={{ zIndex: 10 }}
+                    >
+                      🔥
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div
+            className="px-4 py-2 flex flex-wrap gap-2 border-t"
+            style={{ borderColor: BO }}
+          >
+            {[
+              [5, t.great ?? "Great"],
+              [4, t.good ?? "Good"],
+              [3, t.ok ?? "OK"],
+              [2, t.poor ?? "Poor"],
+              [1, t.bad ?? "Bad"],
+            ].map(([b, lbl]) => (
               <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ background: BUCKET_COLORS[b] }}
-              />
-              {lbl}
+                key={b}
+                className="flex items-center gap-1.5 text-[10px] font-semibold"
+                style={{ color: TX }}
+              >
+                <div
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: BUCKET_COLORS[b] }}
+                />
+                {lbl}
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="px-4 py-3 border-t grid grid-cols-3 text-center"
+            style={{ borderColor: BO }}
+          >
+            <div>
+              <div className="text-lg font-black" style={{ color: A }}>
+                {monthAvgs.sessions}
+              </div>
+              <div
+                className="text-[9px] font-bold uppercase tracking-wider"
+                style={{ color: MU }}
+              >
+                {t.sessions ?? "Sessions"}
+              </div>
             </div>
-          ))}
+            <div>
+              <div className="text-lg font-black" style={{ color: A }}>
+                {monthAvgs.totalMinutes}
+              </div>
+              <div
+                className="text-[9px] font-bold uppercase tracking-wider"
+                style={{ color: MU }}
+              >
+                {t.totalMinutes ?? "Minutes"}
+              </div>
+            </div>
+            <div>
+              <div className="text-lg font-black" style={{ color: A }}>
+                {monthAvgs.restDays}
+              </div>
+              <div
+                className="text-[9px] font-bold uppercase tracking-wider"
+                style={{ color: MU }}
+              >
+                {t.restDays ?? "Rest days"}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div
-          className="px-4 py-3 border-t grid grid-cols-3 text-center"
-          style={{ borderColor: BO }}
-        >
-          <div>
-            <div className="text-lg font-black" style={{ color: A }}>
-              {monthAvgs.sessions}
-            </div>
-            <div
-              className="text-[9px] font-bold uppercase tracking-wider"
-              style={{ color: MU }}
-            >
-              {t.sessions ?? "Sessions"}
-            </div>
-          </div>
-          <div>
-            <div className="text-lg font-black" style={{ color: A }}>
-              {monthAvgs.totalMinutes}
-            </div>
-            <div
-              className="text-[9px] font-bold uppercase tracking-wider"
-              style={{ color: MU }}
-            >
-              {t.totalMinutes ?? "Minutes"}
-            </div>
-          </div>
-          <div>
-            <div className="text-lg font-black" style={{ color: A }}>
-              {monthAvgs.restDays}
-            </div>
-            <div
-              className="text-[9px] font-bold uppercase tracking-wider"
-              style={{ color: MU }}
-            >
-              {t.restDays ?? "Rest days"}
-            </div>
-          </div>
-        </div>
+        {/* Insights — under the calendar in the LEFT column */}
+        <AdviceCards
+          logs={logs}
+          scores={scores}
+          latestGoals={latestGoals}
+          t={t}
+        />
       </div>
 
-      {/* RIGHT: averages + questionnaires */}
+      {/* RIGHT: averages + Goals + 3 questionnaires */}
       <div className="flex flex-col gap-4">
         <div
           className="rounded-2xl border shadow-sm p-4"
@@ -1339,31 +1090,21 @@ function CalendarTab({
             className="text-[10px] font-bold tracking-widest uppercase"
             style={{ color: A }}
           >
-            {t.hooperTitle ?? "Daily check-in"} (Hooper)
+            {t.goalsTitle ?? "Goal Check-in"}
           </div>
-          <HooperCard
-            data={latestHooper}
+          <GoalsCard
+            data={latestGoals}
             t={t}
-            onReadMore={() => latestHooper && setHooperOpen(true)}
+            onReadMore={() => latestGoals && setGoalsOpen(true)}
           />
         </div>
 
-        <div
-          className="rounded-2xl border shadow-sm p-4"
-          style={{ background: SU, borderColor: BO }}
-        >
-          <div
-            className="text-[10px] font-bold tracking-widest uppercase"
-            style={{ color: A }}
-          >
-            {t.restqTitle ?? "Recovery-Stress"} (RESTQ)
-          </div>
-          <RestqCard
-            data={latestRestq}
-            t={t}
-            onReadMore={() => latestRestq && setRestqOpen(true)}
-          />
-        </div>
+        {/* Three questionnaire cards 
+        <QuestionnaireCard type="pss10" latest={latestPss10} t={t} locale={lang} />
+        <QuestionnaireCard type="psqi"  latest={latestPsqi}  t={t} locale={lang} />
+        <QuestionnaireCard type="ipaq"  latest={latestIpaq}  t={t} locale={lang} />
+
+        */}
       </div>
 
       {modalDate && (
@@ -1377,24 +1118,17 @@ function CalendarTab({
         />
       )}
 
-      {hooperOpen && (
-        <HooperDetailModal
-          data={latestHooper}
-          onClose={() => setHooperOpen(false)}
-          t={t}
-        />
-      )}
-
-      {restqOpen && (
-        <RestqDetailModal
-          data={latestRestq}
-          onClose={() => setRestqOpen(false)}
+      {goalsOpen && (
+        <GoalsDetailModal
+          data={latestGoals}
+          onClose={() => setGoalsOpen(false)}
           t={t}
         />
       )}
     </div>
   );
 }
+
 // ── Main Dashboard with tabs ─────────────────────────────────────────────
 export default function Dashboard({ report, lang, code }) {
   const router = useRouter();
@@ -1402,15 +1136,7 @@ export default function Dashboard({ report, lang, code }) {
   const [tab, setTab] = useState("calendar");
   const [showPdfModal, setShowPdfModal] = useState(false);
 
-  const {
-    client,
-    stats,
-    logs,
-    scores,
-    latestHooper,
-    latestRestq,
-    includeNotes,
-  } = report;
+  const { client, stats, logs, scores, latestGoals, includeNotes } = report;
   const profile = client?.profile ?? {};
 
   const handleSignOut = () => {
@@ -1435,11 +1161,16 @@ export default function Dashboard({ report, lang, code }) {
       <div className="px-4 py-6">
         {tab === "calendar" && (
           <CalendarTab
-            logs={logs}
-            scores={scores}
-            latestHooper={latestHooper}
-            latestRestq={latestRestq}
+            logs={report.logs}
+            scores={report.scores}
+            latestHooper={report.latestHooper}
+            latestRestq={report.latestRestq}
+            latestGoals={report.latestGoals}
+            latestPss10={report.latestPss10}
+            latestPsqi={report.latestPsqi}
+            latestIpaq={report.latestIpaq}
             t={t}
+            lang={lang}
             includeNotes={includeNotes}
           />
         )}
