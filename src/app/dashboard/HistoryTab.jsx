@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react';
 const A = '#4A7AB5', AD = '#2D4A6E', BG = '#EEF2F7';
 const SU = '#FFFFFF', BO = '#D0DCEA', TX = '#1A2C3D', MU = '#7A9AB8';
 const BUCKET_COLORS = { 5:'#22C55E', 4:'#86EFAC', 3:'#F59E0B', 2:'#F97316', 1:'#EF4444' };
+
 function bucketOf(score) {
   if (score == null) return null;
   if (score >= 80) return 5;
@@ -19,20 +20,57 @@ const TYPE_COLORS = {
   recovery: '#9CA3AF', other: '#6B7280',
 };
 
+function totalMinutes(log) {
+  if (!log) return 0;
+  const cd = Array.isArray(log.categoryDurations) ? log.categoryDurations : [];
+  if (cd.length) return cd.reduce((s, c) => s + (c.durationMinutes || 0), 0);
+  const ws = Array.isArray(log.workouts) ? log.workouts : [];
+  return ws.reduce((s, w) => s + (w.durationMinutes || 0), 0);
+}
+
+// Build the chips for the expanded body. Prefer categoryDurations
+// (authoritative since the schema migration); fall back to grouping
+// workouts by type if categoryDurations is empty/missing.
+function buildChips(log) {
+  const catDurs = Array.isArray(log.categoryDurations) ? log.categoryDurations : [];
+  if (catDurs.length > 0) {
+    return catDurs.map((c) => ({
+      type: c.type,
+      minutes: c.durationMinutes || 0,
+    }));
+  }
+  const workouts = Array.isArray(log.workouts) ? log.workouts : [];
+  if (workouts.length === 0) return [];
+  const byType = workouts.reduce((acc, w) => {
+    const k = w.type || 'other';
+    acc[k] = (acc[k] || 0) + (w.durationMinutes || 0);
+    return acc;
+  }, {});
+  return Object.entries(byType).map(([type, minutes]) => ({ type, minutes }));
+}
+
+function categoryLabel(type, t) {
+  if (!type) return '—';
+  const key = 'category' + type.charAt(0).toUpperCase() + type.slice(1);
+  return t[key] ?? type;
+}
+
 function HistoryRow({ log, score, t, includeNotes }) {
   const [open, setOpen] = useState(false);
 
   const bucket = bucketOf(score?.compositeScore);
-  const minutes = (log.workouts || []).reduce((s, w) => s + (w.durationMinutes || 0), 0);
+  const minutes = totalMinutes(log);
   const dotColor = bucket ? BUCKET_COLORS[bucket] : '#D1D5DB';
+  const chips = buildChips(log);
 
-  // Quick summary text — workout types as a comma list
-  const types = (log.workouts || []).map((w) => w.type).filter(Boolean);
+  // One-line summary — comma-separated category names from the chips
+  // (matches what's actually shown when expanded, and isn't duplicated
+  // when the same type appears in multiple workouts).
   const typeLabel = log.isRestDay
     ? (t.restDay ?? 'Rest day')
-    : types.length === 0
+    : chips.length === 0
       ? '—'
-      : types.map((ty) => t['category' + ty.charAt(0).toUpperCase() + ty.slice(1)] ?? ty).join(' · ');
+      : chips.map((c) => categoryLabel(c.type, t)).join(' · ');
 
   return (
     <div
@@ -73,7 +111,10 @@ function HistoryRow({ log, score, t, includeNotes }) {
         )}
 
         {/* Caret */}
-        <div className="text-xs flex-shrink-0 transition-transform" style={{ color: MU, transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+        <div
+          className="text-xs flex-shrink-0 transition-transform"
+          style={{ color: MU, transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+        >
           ›
         </div>
       </button>
@@ -81,19 +122,20 @@ function HistoryRow({ log, score, t, includeNotes }) {
       {/* Expanded body */}
       {open && (
         <div className="px-4 pb-4 pt-1 border-t" style={{ borderColor: BO }}>
-          {/* Workouts */}
-          {!log.isRestDay && (log.workouts || []).length > 0 && (
+          {/* Workouts — uses categoryDurations as authoritative source */}
+          {!log.isRestDay && chips.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-3 mb-3">
-              {log.workouts.map((w, i) => (
+              {chips.map((c, i) => (
                 <span
                   key={i}
                   className="px-3 py-1 rounded-full text-xs font-semibold"
                   style={{
-                    background: (TYPE_COLORS[w.type] ?? '#6B7280') + '22',
-                    color: TYPE_COLORS[w.type] ?? '#6B7280',
+                    background: (TYPE_COLORS[c.type] ?? '#6B7280') + '22',
+                    color: TYPE_COLORS[c.type] ?? '#6B7280',
                   }}
                 >
-                  {(t['category' + (w.type || '').charAt(0).toUpperCase() + (w.type || '').slice(1)] ?? w.type)} · {w.durationMinutes}m
+                  {categoryLabel(c.type, t)}
+                  {c.minutes > 0 && ` · ${c.minutes}m`}
                 </span>
               ))}
             </div>
