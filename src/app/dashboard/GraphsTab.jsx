@@ -2,9 +2,15 @@
 
 import { useMemo, useState } from 'react';
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
   BarChart, Bar,
 } from 'recharts';
+
+import GoalsRadarChart from '@/components/dashboard/GoalsRadarChart';
+import WellbeingRadarChart from '@/components/dashboard/WellbeingRadarChart';
+import CategoryMixDonut from '@/components/dashboard/CategoryMixDonut';
+import WeeklyVolumeBars from '@/components/dashboard/WeeklyVolumeBars';
+import HeatmapChart from '@/components/dashboard/HeatmapChart';
 
 function bucketOf(score) {
   if (score == null) return null;
@@ -49,7 +55,7 @@ const RANGES = [
   { key: 'all', days: null, labelKey: 'rangeAllTime',    fallback: 'All time'     },
 ];
 
-export default function GraphsTab({ logs, scores, t }) {
+export default function GraphsTab({ logs, scores, latestGoals, t }) {
   const [range, setRange] = useState('30d');
 
   const sortedLogs = useMemo(
@@ -85,7 +91,6 @@ export default function GraphsTab({ logs, scores, t }) {
     score: bucketOf(s.compositeScore),
   }));
 
-  // Now uses totalMinutes() helper which reads both shapes.
   const minutesData = filteredLogs.map((l) => ({
     date: l.date.slice(5),
     minutes: totalMinutes(l),
@@ -138,9 +143,29 @@ export default function GraphsTab({ logs, scores, t }) {
         </div>
         {headerExtra}
       </div>
+      <div style={{ width: '100%' }}>
+        {children}
+      </div>
+    </div>
+  );
+
+  const ChartCard = ({ title, children, fullWidth = false, headerExtra = null }) => (
+    <Card title={title} fullWidth={fullWidth} headerExtra={headerExtra}>
       <div style={{ width: '100%', height: 220 }}>
         <ResponsiveContainer>{children}</ResponsiveContainer>
       </div>
+    </Card>
+  );
+
+  const SectionHeader = ({ children }) => (
+    <div className="md:col-span-2 flex items-center gap-3 mt-2">
+      <div
+        className="text-[10px] font-bold tracking-widest uppercase"
+        style={{ color: MU }}
+      >
+        {children}
+      </div>
+      <div className="flex-1 h-px" style={{ background: BO }} />
     </div>
   );
 
@@ -192,6 +217,9 @@ export default function GraphsTab({ logs, scores, t }) {
     return `${sign}${abs} ${t?.kg ?? 'kg'}`;
   })();
 
+  const goalsAnswers = Array.isArray(latestGoals?.answers) ? latestGoals.answers : [];
+  const hasGoals = goalsAnswers.length === 5;
+
   return (
     <>
       <RangeFilter />
@@ -202,17 +230,45 @@ export default function GraphsTab({ logs, scores, t }) {
         </div>
       ) : (
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card title={t.compositeScore ?? 'Composite score'}>
-            <LineChart data={scoreData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="date" stroke={MU} fontSize={10} />
-              <YAxis domain={[0, 5]} stroke={MU} fontSize={10} ticks={[0, 1, 2, 3, 4, 5]} />
-              <Tooltip />
-              <Line type="monotone" dataKey="score" stroke={A} strokeWidth={2} dot={{ r: 3 }} />
-            </LineChart>
+
+          {/* ━━━ SNAPSHOTS ━━━ */}
+          <SectionHeader>
+            {t.snapshots ?? 'Snapshots'}
+          </SectionHeader>
+
+          <Card title={t.wellbeingBalance ?? 'Wellbeing balance'}>
+            <WellbeingRadarChart logs={filteredLogs} t={t} />
           </Card>
 
-          <Card title={t.dailyMinutes ?? 'Daily minutes'}>
+          {hasGoals ? (
+            <Card title={t.goalsTitle ?? 'Goal check-in'}>
+              <GoalsRadarChart
+                answers={goalsAnswers}
+                status={latestGoals?.scores?.status}
+                t={t}
+              />
+            </Card>
+          ) : (
+            <Card title={t.goalsTitle ?? 'Goal check-in'}>
+              <div className="text-center py-12 text-xs italic" style={{ color: MU }}>
+                {t.goalsNever ?? 'Not completed'}
+              </div>
+            </Card>
+          )}
+
+          <Card title={t.categoryMix ?? 'Category mix'}>
+            <CategoryMixDonut logs={filteredLogs} t={t} />
+          </Card>
+
+          <Card title={t.heatmap ?? 'Heatmap'}>
+            <HeatmapChart logs={sortedLogs} scores={sortedScores} weeks={26} t={t} />
+          </Card>
+
+          <Card title={t.weeklyVolume ?? 'Weekly volume'}>
+            <WeeklyVolumeBars logs={sortedLogs} weeks={12} t={t} />
+          </Card>
+
+          <ChartCard title={t.dailyMinutes ?? 'Daily minutes'}>
             <BarChart data={minutesData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke={MU} fontSize={10} />
@@ -220,34 +276,78 @@ export default function GraphsTab({ logs, scores, t }) {
               <Tooltip />
               <Bar dataKey="minutes" fill="#4A7AB5" radius={[4, 4, 0, 0]} />
             </BarChart>
-          </Card>
+          </ChartCard>
 
-          <Card title={(t.mood ?? 'Mood') + ' & ' + (t.energy ?? 'Energy')}>
+          {/* ━━━ TRENDS ━━━ */}
+          <SectionHeader>
+            {t.trends ?? 'Trends'}
+          </SectionHeader>
+
+          <ChartCard title={t.compositeScore ?? 'Composite score'}>
+            <LineChart data={scoreData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="date" stroke={MU} fontSize={10} />
+              <YAxis domain={[0, 5]} stroke={MU} fontSize={10} ticks={[0, 1, 2, 3, 4, 5]} />
+              <Tooltip />
+              <Line type="monotone" dataKey="score" stroke={A} strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ChartCard>
+
+          <ChartCard title={(t.mood ?? 'Mood') + ' & ' + (t.energy ?? 'Energy')}>
             <LineChart data={moodEnergyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke={MU} fontSize={10} />
               <YAxis domain={[0, 5]} stroke={MU} fontSize={10} />
               <Tooltip />
-              <Line type="monotone" dataKey="mood" stroke="#4A7AB5" strokeWidth={2} dot={{ r: 2 }} />
-              <Line type="monotone" dataKey="energy" stroke="#22C55E" strokeWidth={2} dot={{ r: 2 }} />
+              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} iconType="circle" />
+              <Line
+                type="monotone"
+                dataKey="mood"
+                name={t.mood ?? 'Mood'}
+                stroke="#4A7AB5"
+                strokeWidth={2}
+                dot={{ r: 2 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="energy"
+                name={t.energy ?? 'Energy'}
+                stroke="#22C55E"
+                strokeWidth={2}
+                dot={{ r: 2 }}
+              />
             </LineChart>
-          </Card>
+          </ChartCard>
 
-          <Card title={(t.sleep ?? 'Sleep') + ' & ' + (t.soreness ?? 'Soreness')}>
+          <ChartCard title={(t.sleep ?? 'Sleep') + ' & ' + (t.soreness ?? 'Soreness')}>
             <LineChart data={sleepSorenessData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke={MU} fontSize={10} />
               <YAxis domain={[0, 5]} stroke={MU} fontSize={10} />
               <Tooltip />
-              <Line type="monotone" dataKey="sleep" stroke="#A855F7" strokeWidth={2} dot={{ r: 2 }} />
-              <Line type="monotone" dataKey="soreness" stroke="#EF4444" strokeWidth={2} dot={{ r: 2 }} />
+              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} iconType="circle" />
+              <Line
+                type="monotone"
+                dataKey="sleep"
+                name={t.sleep ?? 'Sleep'}
+                stroke="#A855F7"
+                strokeWidth={2}
+                dot={{ r: 2 }}
+              />
+              <Line
+                type="monotone"
+                dataKey="soreness"
+                name={t.soreness ?? 'Soreness'}
+                stroke="#EF4444"
+                strokeWidth={2}
+                dot={{ r: 2 }}
+              />
             </LineChart>
-          </Card>
+          </ChartCard>
 
           {weightData.length > 0 && (
-            <Card
+            <ChartCard
               title={t.weight ?? 'Weight'}
-              fullWidth
               headerExtra={
                 weightDeltaLabel ? (
                   <span
@@ -286,7 +386,7 @@ export default function GraphsTab({ logs, scores, t }) {
                   dot={{ r: 3 }}
                 />
               </LineChart>
-            </Card>
+            </ChartCard>
           )}
         </div>
       )}

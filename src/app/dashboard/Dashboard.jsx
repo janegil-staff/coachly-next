@@ -731,7 +731,7 @@ function CalendarTab({
   profile,
   logs,
   scores,
-  stats,                         /* ← add this */
+  stats /* ← add this */,
   latestHooper,
   latestRestq,
   latestGoals,
@@ -779,19 +779,14 @@ function CalendarTab({
         .filter((v) => typeof v === "number");
       return arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
     };
-    const totalMinutes = monthLogs.reduce(
-      (s, l) =>
-        s +
-        (l.workouts || []).reduce((a, w) => a + (w.durationMinutes || 0), 0),
-      0,
-    );
+    const totalMins = monthLogs.reduce((s, l) => s + totalMinutes(l), 0);
     return {
       effort: avg("effort", true),
       mood: avg("mood"),
       energy: avg("energy"),
       sleep: avg("sleepQuality"),
       soreness: avg("soreness"),
-      totalMinutes,
+      totalMinutes: totalMins,
       sessions: monthLogs.filter(
         (l) => !l.isRestDay && (l.workouts || []).length > 0,
       ).length,
@@ -1219,7 +1214,14 @@ export default function Dashboard({ report, lang, code }) {
             includeNotes={includeNotes}
           />
         )}
-        {tab === "graphs" && <GraphsTab logs={logs} scores={scores} t={t} />}
+        {tab === "graphs" && (
+          <GraphsTab
+            logs={logs}
+            scores={scores}
+            latestGoals={report.latestGoals}
+            t={t}
+          />
+        )}
       </div>
 
       {showPdfModal && (
