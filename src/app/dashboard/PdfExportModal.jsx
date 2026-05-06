@@ -39,6 +39,10 @@ const CAT_COLORS = {
   other: "#bdbdbd",
 };
 
+// Display order for the category legend — always shown in this order
+// regardless of whether the client has logged minutes in each.
+const ALL_CATEGORIES = ["strength", "cardio", "mobility", "recovery", "other"];
+
 // Status colors for the goals radar — match the modal version
 const GOALS_STATUS_COLORS = {
   stalled: "#EF4444",
@@ -102,6 +106,11 @@ function logCategoryMinutes(log) {
     out[k] = (out[k] || 0) + (Number(w?.durationMinutes) || 0);
   });
   return out;
+}
+
+function categoryLabel(name, t) {
+  const key = "category" + name.charAt(0).toUpperCase() + name.slice(1);
+  return t[key] ?? name.charAt(0).toUpperCase() + name.slice(1);
 }
 
 function startOfWeek(d) {
@@ -425,7 +434,7 @@ async function generatePDF({ data, t, year, month, allTime, logs }) {
   if (radarImg || categoryImg) {
     checkPage(80);
     sectionHeader(t.balanceAndCategory ?? "Balance & Category Mix");
-    addChartPair(radarImg, categoryImg, 68);
+    addChartPair(radarImg, categoryImg, 75);
   }
 
   // ── Weekly volume bar chart ───────────────────────────────────────────
@@ -656,9 +665,14 @@ function OffscreenCharts({ data, logs, t }) {
       catTotals[cat] = (catTotals[cat] ?? 0) + mins;
     });
   });
-  const categoryData = Object.entries(catTotals)
-    .map(([name, value]) => ({ name, value }))
-    .filter((x) => x.value > 0);
+  // Pie data still only includes categories with > 0 minutes
+  // (otherwise recharts renders empty slices). The legend below
+  // separately renders all 5 categories.
+  const categoryData = ALL_CATEGORIES.map((name) => ({
+    name,
+    value: catTotals[name] || 0,
+  })).filter((x) => x.value > 0);
+  const categoryTotal = categoryData.reduce((s, c) => s + c.value, 0);
 
   // Weekly volume (last 12 weeks)
   const weekBuckets = {};
@@ -900,50 +914,55 @@ function OffscreenCharts({ data, logs, t }) {
           </ResponsiveContainer>
         </div>
       )}
-
-      {/* Category donut */}
-      {categoryData.length > 0 && (
+      {/* Category donut + always-on 5-category legend */}
+      <div
+        id="pdf-chart-category"
+        style={{ width: 320, height: 320, background: "#fff", padding: "8px" }}
+      >
         <div
-          id="pdf-chart-category"
           style={{
-            width: 320,
-            height: 280,
-            background: "#fff",
-            padding: "8px",
+            fontSize: 11,
+            fontWeight: 700,
+            color: "#2d4a6e",
+            textAlign: "center",
+            marginBottom: 4,
           }}
         >
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#2d4a6e",
-              textAlign: "center",
-              marginBottom: 4,
-            }}
-          >
-            {t.categoryMix ?? "Category Mix"}
-          </div>
-          <ResponsiveContainer width="100%" height="90%">
+          {t.categoryMix ?? "Category Mix"}
+        </div>
+
+        <div style={{ width: "100%", height: 200 }}>
+          <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={categoryData}
+                data={
+                  categoryData.length > 0
+                    ? categoryData
+                    : [{ name: "empty", value: 1 }]
+                }
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                innerRadius={50}
-                outerRadius={90}
-                paddingAngle={2}
-                label={({ name, percent }) =>
-                  `${name} ${(percent * 100).toFixed(0)}%`
-                }
+                innerRadius={42}
+                outerRadius={75}
+                startAngle={90}
+                endAngle={-270}
+                paddingAngle={categoryData.length > 1 ? 2 : 0}
                 labelLine={false}
-                style={{ fontSize: 10 }}
+                isAnimationActive={false}
               >
-                {categoryData.map((entry, i) => (
+                {(categoryData.length > 0
+                  ? categoryData
+                  : [{ name: "empty" }]
+                ).map((entry, i) => (
                   <Cell
-                    key={i}
-                    fill={CAT_COLORS[entry.name] ?? CAT_COLORS.other}
+                    key={`${entry.name}-${i}`}
+                    fill={
+                      entry.name === "empty"
+                        ? "#e8eef5"
+                        : (CAT_COLORS[entry.name] ?? CAT_COLORS.other)
+                    }
                   />
                 ))}
               </Pie>
@@ -951,7 +970,54 @@ function OffscreenCharts({ data, logs, t }) {
             </PieChart>
           </ResponsiveContainer>
         </div>
-      )}
+
+        {/* Always-on legend: shows all 5 categories, greys out empty ones */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "3px 12px",
+            padding: "4px 12px 0",
+            fontSize: 9,
+          }}
+        >
+          {ALL_CATEGORIES.map((name) => {
+            const minutes = catTotals[name] || 0;
+            const pct =
+              categoryTotal > 0
+                ? Math.round((minutes / categoryTotal) * 100)
+                : 0;
+            const isEmpty = minutes === 0;
+            return (
+              <div
+                key={name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  opacity: isEmpty ? 0.4 : 1,
+                }}
+              >
+                <span
+                  style={{
+                    width: 9,
+                    height: 9,
+                    borderRadius: 2,
+                    flexShrink: 0,
+                    background: CAT_COLORS[name],
+                  }}
+                />
+                <span style={{ color: "#2d4a6e", fontWeight: 600, flex: 1 }}>
+                  {categoryLabel(name, t)}
+                </span>
+                <span style={{ color: "#7a9ab8" }}>
+                  {minutes}m · {pct}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Weekly volume bars */}
       {volumeData.length > 0 && (
