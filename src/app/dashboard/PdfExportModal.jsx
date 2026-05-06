@@ -430,6 +430,67 @@ async function generatePDF({ data, t, year, month, allTime, logs }) {
     addChart(trendsImg, null, 55);
   }
 
+  // ── Relevant advice (full bodies) ─────────────────────────────────────
+  const relevantAdvice = Array.isArray(profile.relevantAdvice)
+    ? profile.relevantAdvice
+    : [];
+  const viewedAdvice = new Set(
+    Array.isArray(profile.viewedAdvice) ? profile.viewedAdvice : [],
+  );
+
+  if (relevantAdvice.length > 0) {
+    sectionHeader(t.relevantAdvice ?? "Relevant Tips");
+
+    relevantAdvice.forEach((id) => {
+      const title = t["advice_" + id + "_title"];
+      const body = t["advice_" + id + "_body"];
+      if (!title) return; // skip if translation missing
+
+      // Wrap the body to the content width minus a 4mm left indent.
+      // splitTextToSize gives us the line count we need before drawing,
+      // so we can checkPage the whole tip as a unit.
+      const bodyLines = body ? doc.splitTextToSize(body, CW - 8) : [];
+      const tipHeight = 6 + bodyLines.length * 4 + 2;
+
+      checkPage(tipHeight);
+
+      // Title row
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...NAVY);
+      doc.text("•", ML + 2, y + 4);
+      doc.text(String(title), ML + 7, y + 4);
+
+      // "Relevant" marker on the right
+      if (viewedAdvice.has(id)) {
+        doc.setFontSize(7);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(34, 197, 94); // OK green
+        doc.text(
+          `✓ ${t.adviceRelevantShort ?? "RELEVANT"}`,
+          W - MR - 2,
+          y + 4,
+          { align: "right" },
+        );
+      }
+      y += 5;
+
+      // Body
+      if (bodyLines.length > 0) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(...DARK);
+        bodyLines.forEach((line) => {
+          doc.text(line, ML + 7, y + 3);
+          y += 4;
+        });
+      }
+
+      y += 3; // gap between tips
+    });
+
+    y += 1;
+  }
   // ── Wellbeing radar + Category donut side by side ─────────────────────
   if (radarImg || categoryImg) {
     checkPage(80);
@@ -492,35 +553,6 @@ async function generatePDF({ data, t, year, month, allTime, logs }) {
 
       if (restqImg) addChart(restqImg, null, 65);
     }
-  }
-
-  // ── Recent notes timeline ─────────────────────────────────────────────
-  const notesLogs = [...logs]
-    .filter((l) => l.note && l.note.trim())
-    .sort((a, b) =>
-      (b.date ?? b.createdAt).localeCompare(a.date ?? a.createdAt),
-    )
-    .slice(0, 10);
-  if (notesLogs.length > 0) {
-    sectionHeader(t.recentNotes ?? "Recent Notes");
-    notesLogs.forEach((l, i) => {
-      checkPage(8);
-      if (i % 2 === 0) {
-        doc.setFillColor(...LGRAY);
-        doc.rect(ML, y, CW, 7, "F");
-      }
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(...NAVY);
-      doc.text(fmtDate(l.date ?? l.createdAt), ML + 2, y + 4);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(...DARK);
-      doc.setFontSize(8);
-      const noteText = doc.splitTextToSize(l.note, CW - 30);
-      doc.text(noteText.slice(0, 1), ML + 26, y + 4);
-      y += 7;
-    });
-    y += 3;
   }
 
   // ── Full log records ──────────────────────────────────────────────────
