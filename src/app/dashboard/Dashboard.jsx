@@ -8,6 +8,7 @@ import PdfExportModal from "./PdfExportModal";
 import AdviceCards from "./AdviceCards";
 import { getCatalogItemName } from "@/lib/exerciseCatalog";
 import { getTranslations } from "@/lib/translations";
+import GoalsRadarChart from "@/components/dashboard/GoalsRadarChart";
 
 const A = "#4A7AB5",
   AD = "#2D4A6E",
@@ -537,7 +538,6 @@ const GOALS_QUESTIONS = [
   },
   { qKey: "goalsQ5", fallback: "Have the support I need" },
 ];
-
 function GoalsDetailModal({ data, onClose, t }) {
   if (!data) return null;
   const s = data.scores || {};
@@ -557,7 +557,7 @@ function GoalsDetailModal({ data, onClose, t }) {
         style={{ background: SU, borderColor: BO }}
       >
         <div
-          className="sticky top-0 flex items-center justify-between px-5 py-4 text-white"
+          className="sticky top-0 flex items-center justify-between px-5 py-4 text-white z-10"
           style={{ background: `linear-gradient(135deg, ${A}, ${AD})` }}
         >
           <div>
@@ -576,6 +576,7 @@ function GoalsDetailModal({ data, onClose, t }) {
         </div>
 
         <div className="p-5 flex flex-col gap-4">
+          {/* Score summary pill */}
           <div
             className="rounded-xl p-4 border flex items-center justify-between"
             style={{ background: color + "15", borderColor: color + "55" }}
@@ -605,6 +606,15 @@ function GoalsDetailModal({ data, onClose, t }) {
             </div>
           </div>
 
+          {/* Radar visualization */}
+          <div
+            className="rounded-xl border"
+            style={{ background: SU, borderColor: BO }}
+          >
+            <GoalsRadarChart answers={answers} status={s.status} t={t} />
+          </div>
+
+          {/* Compact answer list — full question text + small score pip */}
           <div>
             <div
               className="text-[10px] font-bold tracking-widest uppercase mb-2"
@@ -612,32 +622,50 @@ function GoalsDetailModal({ data, onClose, t }) {
             >
               {t.answers ?? "Answers"}
             </div>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
               {GOALS_QUESTIONS.map((q, i) => {
-                const val = answers[i];
+                const val = answers[i] ?? 0;
+                const scoreColor =
+                  val >= 4 ? OK : val >= 3 ? "#4A7AB5" : val >= 2 ? WARN : DANGER;
                 return (
                   <div
-                    key={i}
-                    className="rounded-xl px-4 py-3 border"
-                    style={{ background: BG, borderColor: BO }}
+                    key={q.qKey}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      padding: "6px 10px",
+                      background: BG,
+                      borderRadius: 8,
+                    }}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span
-                        className="text-xs font-semibold flex-1"
-                        style={{ color: TX }}
-                      >
-                        {t[q.qKey] ?? q.fallback}
-                      </span>
-                      <span className="text-lg font-black" style={{ color: A }}>
-                        {val ?? "—"}
-                        <span
-                          className="text-[10px] font-bold ml-0.5"
-                          style={{ color: MU }}
-                        >
-                          /5
-                        </span>
-                      </span>
-                    </div>
+                    <span
+                      style={{
+                        flex: 1,
+                        fontSize: 11,
+                        color: TX,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {t[q.qKey] ?? q.fallback}
+                    </span>
+                    <span
+                      style={{
+                        width: 22,
+                        height: 22,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        background: scoreColor,
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        fontWeight: 800,
+                      }}
+                    >
+                      {val || "—"}
+                    </span>
                   </div>
                 );
               })}
