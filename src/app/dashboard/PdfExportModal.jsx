@@ -9,7 +9,7 @@ import {
 } from "recharts";
 
 const A = "#4a7ab5", AD = "#2d4a6e", BO = "#d0dcea", MU = "#7a9ab8";
-const SU = "#ffffff", BG = "#eef2f7";
+const SU = "#ffffff", BO_ = "#d0dcea", BG = "#eef2f7";
 
 // Category palette — must match the dashboard's category coloring
 const CAT_COLORS = {
@@ -34,9 +34,38 @@ function avgOf(arr, field) {
   const v = arr.map(x => x[field]).filter(x => typeof x === "number");
   return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : null;
 }
-function durationToMin(workouts) {
-  return (workouts || []).reduce((a, b) => a + (Number(b?.durationMinutes) || 0), 0);
+
+// Total minutes for a log. Prefer categoryDurations (authoritative
+// post-schema-migration); fall back to workouts[].durationMinutes.
+function logTotalMinutes(log) {
+  if (!log) return 0;
+  const cd = Array.isArray(log.categoryDurations) ? log.categoryDurations : [];
+  if (cd.length) return cd.reduce((s, c) => s + (Number(c?.durationMinutes) || 0), 0);
+  const ws = Array.isArray(log.workouts) ? log.workouts : [];
+  return ws.reduce((s, w) => s + (Number(w?.durationMinutes) || 0), 0);
 }
+
+// Per-category minutes for a log, returned as { type: minutes }.
+// Same source preference as logTotalMinutes.
+function logCategoryMinutes(log) {
+  const out = {};
+  if (!log) return out;
+  const cd = Array.isArray(log.categoryDurations) ? log.categoryDurations : [];
+  if (cd.length) {
+    cd.forEach(c => {
+      const k = (c.type || "other").toLowerCase();
+      out[k] = (out[k] || 0) + (Number(c?.durationMinutes) || 0);
+    });
+    return out;
+  }
+  const ws = Array.isArray(log.workouts) ? log.workouts : [];
+  ws.forEach(w => {
+    const k = (w.type || w.category || "other").toLowerCase();
+    out[k] = (out[k] || 0) + (Number(w?.durationMinutes) || 0);
+  });
+  return out;
+}
+
 function startOfWeek(d) {
   const x = new Date(d);
   x.setHours(0, 0, 0, 0);
@@ -213,7 +242,7 @@ async function generatePDF({ data, t, year, month, allTime, logs }) {
   y = Math.max(ly, ry) + 3;
 
   // ── Period stats ──────────────────────────────────────────────────────
-  const totalMin = logs.reduce((a, l) => a + durationToMin(l.workouts), 0);
+  const totalMin = logs.reduce((a, l) => a + logTotalMinutes(l), 0);
   const restCount = logs.filter(l => l.isRestDay).length;
   const sessionsCount = logs.reduce((a, l) => a + ((l.workouts || []).length), 0);
 
@@ -350,7 +379,8 @@ async function generatePDF({ data, t, year, month, allTime, logs }) {
       doc.text(String(r.energy ?? "-"), cols[3].x, y + 4);
       doc.text(String(r.sleepQuality ?? "-"), cols[4].x, y + 4);
       doc.text(String(r.soreness ?? "-"), cols[5].x, y + 4);
-      doc.text(String(durationToMin(r.workouts) || "-"), cols[6].x, y + 4);
+      const mins = logTotalMinutes(r);
+      doc.text(String(mins || "-"), cols[6].x, y + 4);
       const wText = (r.workouts || [])
         .map(w => w.name || w.type)
         .filter(Boolean).join(", ").slice(0, 38);
@@ -402,13 +432,13 @@ function OffscreenCharts({ data, logs, t }) {
     { subject: t.recovery ?? "Recovery", value: avgSoreness != null ? +(6 - avgSoreness).toFixed(1) : 5,    fullMark: 5 },
   ];
 
-  // Category breakdown (donut)
+  // Category breakdown (donut) — uses categoryDurations as authoritative
   const catTotals = {};
   logs.forEach(l => {
     if (l.isRestDay) return;
-    (l.workouts || []).forEach(w => {
-      const cat = (w.type || w.category || "other").toLowerCase();
-      catTotals[cat] = (catTotals[cat] ?? 0) + (Number(w.durationMinutes) || 0);
+    const perCat = logCategoryMinutes(l);
+    Object.entries(perCat).forEach(([cat, mins]) => {
+      catTotals[cat] = (catTotals[cat] ?? 0) + mins;
     });
   });
   const categoryData = Object.entries(catTotals)
@@ -422,7 +452,7 @@ function OffscreenCharts({ data, logs, t }) {
     const ws = startOfWeek(new Date(l.date ?? l.createdAt));
     const key = `${pad(ws.getMonth() + 1)}/${pad(ws.getDate())}`;
     if (!weekBuckets[key]) weekBuckets[key] = { week: key, minutes: 0 };
-    weekBuckets[key].minutes += durationToMin(l.workouts);
+    weekBuckets[key].minutes += logTotalMinutes(l);
   });
   const volumeData = Object.values(weekBuckets);
 
