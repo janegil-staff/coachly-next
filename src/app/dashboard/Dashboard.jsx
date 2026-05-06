@@ -8,7 +8,6 @@ import PdfExportModal from "./PdfExportModal";
 import AdviceCards from "./AdviceCards";
 import { getCatalogItemName } from "@/lib/exerciseCatalog";
 import { getTranslations } from "@/lib/translations";
-import QuestionnaireCard from "@/components/dashboard/QuestionnaireCard";
 
 const A = "#4A7AB5",
   AD = "#2D4A6E",
@@ -695,6 +694,7 @@ function GoalsCard({ data, t, onReadMore }) {
 
 // ── Calendar tab content ────────────────────────────────────────────────
 function CalendarTab({
+  profile,
   logs,
   scores,
   latestHooper,
@@ -1018,10 +1018,10 @@ function CalendarTab({
         </div>
 
         {/* Insights — under the calendar in the LEFT column */}
+        {/* Tips marked relevant by the client but not yet viewed */}
         <AdviceCards
-          logs={logs}
-          scores={scores}
-          latestGoals={latestGoals}
+          relevantAdvice={profile?.relevantAdvice}
+          viewedAdvice={profile?.viewedAdvice}
           t={t}
         />
       </div>
@@ -1162,6 +1162,7 @@ export default function Dashboard({ report, lang, code }) {
         {tab === "calendar" && (
           <CalendarTab
             logs={report.logs}
+            profile={profile}
             scores={report.scores}
             latestHooper={report.latestHooper}
             latestRestq={report.latestRestq}

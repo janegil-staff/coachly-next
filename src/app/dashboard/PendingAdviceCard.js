@@ -1,19 +1,23 @@
-// src/components/AdviceCards.js
+// src/app/dashboard/PendingAdviceCard.js
 //
-// Coach view of advice tips. Shows all tips the client has marked relevant
-// for themselves, with a viewed indicator on tips they've already opened
-// in the mobile app.
+// Coach view of "tips not yet shown" — the difference between what the
+// client marked as relevant for themselves and what they've actually
+// opened in the mobile app.
 //
 // Reads from:
 //   relevantAdvice  — array of advice IDs the client said are relevant
 //   viewedAdvice    — array of advice IDs the client has already opened
+//
+// Renders the difference: relevantAdvice − viewedAdvice. Each item is
+// clickable to expand the body inline.
 //
 // Translations from t.advice_<id>_title and t.advice_<id>_body take
 // priority. If a key is missing, falls back to the built-in English
 // content below — so the dashboard always shows real text, never raw
 // IDs like "t1".
 //
-// Click a headline to expand its body. Click again to collapse.
+// Mirrors AdviceCards.js style. Differs only in card heading and the
+// extra subtitle line showing the count.
 
 "use client";
 
@@ -25,20 +29,25 @@ const A = "#4A7AB5",
   SU = "#FFFFFF",
   BO = "#D0DCEA",
   TX = "#1A2C3D",
-  MU = "#7A9AB8",
-  OK = "#22C55E";
+  MU = "#7A9AB8";
+
+// Slightly warmer accent so the card visually distinguishes itself from
+// the regular "Relevant for me" card sitting next to it.
+const ACCENT = "#F97316"; // orange — same status color used in mobile
 
 const CATEGORY_META = {
-  training: { color: "#4A7AB5", icon: "🏋" },
-  recovery: { color: "#22C55E", icon: "🌿" },
-  nutrition: { color: "#F59E0B", icon: "🍎" },
-  sleep: { color: "#A855F7", icon: "🌙" },
-  mindset: { color: "#06B6D4", icon: "💡" },
+  training:   { color: "#4A7AB5", icon: "🏋" },
+  recovery:   { color: "#22C55E", icon: "🌿" },
+  nutrition:  { color: "#F59E0B", icon: "🍎" },
+  sleep:      { color: "#A855F7", icon: "🌙" },
+  mindset:    { color: "#06B6D4", icon: "💡" },
   motivation: { color: "#EF4444", icon: "🔥" },
 };
 
 // Mirror of mobile's ADVICE_KEYS — must stay in sync.
-// `title` and `body` are English fallbacks shown when translations are missing.
+// Same library used by AdviceCards.js — duplicated here so the two cards
+// stay decoupled. If you'd rather DRY this, extract to a shared module
+// like src/lib/adviceLibrary.js and import from both.
 const ADVICE_LIBRARY = [
   // ── Training ───────────────────────────────────────────────────
   {
@@ -214,9 +223,11 @@ const ADVICE_LIBRARY = [
   },
 ];
 
-const ADVICE_BY_ID = Object.fromEntries(ADVICE_LIBRARY.map((a) => [a.id, a]));
+const ADVICE_BY_ID = Object.fromEntries(
+  ADVICE_LIBRARY.map((a) => [a.id, a]),
+);
 
-export default function AdviceCards({ relevantAdvice, viewedAdvice, t }) {
+export default function PendingAdviceCard({ relevantAdvice, viewedAdvice, t }) {
   const [expanded, setExpanded] = useState(new Set());
 
   const toggle = (id) => {
@@ -228,11 +239,13 @@ export default function AdviceCards({ relevantAdvice, viewedAdvice, t }) {
     });
   };
 
-  // Show all relevant tips with a viewed flag — matches mobile behavior.
+  // Compute relevant-but-not-viewed: tips the client said are relevant for
+  // them, but hasn't opened in the mobile app yet.
   const items = useMemo(() => {
     const relevant = Array.isArray(relevantAdvice) ? relevantAdvice : [];
     const viewed = new Set(Array.isArray(viewedAdvice) ? viewedAdvice : []);
     return relevant
+      .filter((id) => !viewed.has(id))
       .map((id) => {
         const meta = ADVICE_BY_ID[id];
         if (!meta) return null;
@@ -240,8 +253,7 @@ export default function AdviceCards({ relevantAdvice, viewedAdvice, t }) {
           id,
           category: meta.category,
           title: t["advice_" + id + "_title"] ?? meta.title,
-          body: t["advice_" + id + "_body"] ?? meta.body,
-          viewed: viewed.has(id),
+          body:  t["advice_" + id + "_body"]  ?? meta.body,
         };
       })
       .filter(Boolean);
@@ -255,18 +267,16 @@ export default function AdviceCards({ relevantAdvice, viewedAdvice, t }) {
       >
         <div
           className="text-[10px] font-bold tracking-widest uppercase mb-2"
-          style={{ color: A }}
+          style={{ color: ACCENT }}
         >
-          {t.adviceTitle ?? "Relevant tips"}
+          {t.advicePendingTitle ?? "Tips not yet shown"}
         </div>
         <div className="text-xs" style={{ color: MU }}>
-          {t.adviceEmpty ?? "No tips marked relevant yet."}
+          {t.advicePendingEmpty ?? "All relevant tips have been viewed."}
         </div>
       </div>
     );
   }
-
-  const viewedCount = items.filter((i) => i.viewed).length;
 
   return (
     <div
@@ -275,14 +285,15 @@ export default function AdviceCards({ relevantAdvice, viewedAdvice, t }) {
     >
       <div
         className="text-[10px] font-bold tracking-widest uppercase mb-1"
-        style={{ color: A }}
+        style={{ color: ACCENT }}
       >
-        {t.adviceTitle ?? "Relevant tips"}
+        {t.advicePendingTitle ?? "Tips not yet shown"}
       </div>
       <div className="text-[11px] mb-3" style={{ color: MU }}>
-        {(t.adviceSubtitle ?? "{viewed} of {total} viewed")
-          .replace("{viewed}", viewedCount)
-          .replace("{total}", items.length)}
+        {(t.advicePendingSubtitle ?? "{count} tip(s) marked relevant but not viewed yet").replace(
+          "{count}",
+          items.length,
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -308,19 +319,6 @@ export default function AdviceCards({ relevantAdvice, viewedAdvice, t }) {
                 >
                   {item.title}
                 </span>
-                {item.viewed && (
-                  <span
-                    className="flex-shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded"
-                    style={{
-                      color: OK,
-                      background: OK + "18",
-                      letterSpacing: "0.05em",
-                    }}
-                    title={t.adviceRelevant ?? "Marked relevant by client"}
-                  >
-                    ✓ {t.adviceRelevantShort ?? "RELEVANT"}
-                  </span>
-                )}
                 <span
                   className="flex-shrink-0 text-[10px] transition-transform"
                   style={{
