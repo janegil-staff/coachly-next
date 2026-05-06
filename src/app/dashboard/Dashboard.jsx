@@ -9,7 +9,7 @@ import AdviceCards from "./AdviceCards";
 import { getCatalogItemName } from "@/lib/exerciseCatalog";
 import { getTranslations } from "@/lib/translations";
 import GoalsRadarChart from "@/components/dashboard/GoalsRadarChart";
-
+import StatRibbon from "@/components/dashboard/StatRibbon";
 const A = "#4A7AB5",
   AD = "#2D4A6E",
   AL = "#DDE8F4",
@@ -626,7 +626,13 @@ function GoalsDetailModal({ data, onClose, t }) {
               {GOALS_QUESTIONS.map((q, i) => {
                 const val = answers[i] ?? 0;
                 const scoreColor =
-                  val >= 4 ? OK : val >= 3 ? "#4A7AB5" : val >= 2 ? WARN : DANGER;
+                  val >= 4
+                    ? OK
+                    : val >= 3
+                      ? "#4A7AB5"
+                      : val >= 2
+                        ? WARN
+                        : DANGER;
                 return (
                   <div
                     key={q.qKey}
@@ -725,6 +731,7 @@ function CalendarTab({
   profile,
   logs,
   scores,
+  stats,                         /* ← add this */
   latestHooper,
   latestRestq,
   latestGoals,
@@ -1192,6 +1199,7 @@ export default function Dashboard({ report, lang, code }) {
             logs={report.logs}
             profile={profile}
             scores={report.scores}
+            stats={report.stats} /* ← add this */
             latestHooper={report.latestHooper}
             latestRestq={report.latestRestq}
             latestGoals={report.latestGoals}

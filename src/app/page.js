@@ -5,6 +5,24 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getTranslations, LANGUAGES } from "@/lib/translations";
 
+// ─── Store URLs ──────────────────────────────────────────────────────────
+// Update these once your apps are live in their stores.
+//
+// To find the App Store URL once Coachly is approved:
+//   App Store Connect → Coachly → top of page shows the URL
+//   OR on iPhone: search Coachly → Share → Copy Link
+//
+// To find the Play Store URL once Coachly is approved:
+//   Play Console → Coachly → package name (e.g. com.qup.coachly)
+//   OR on Android: search Coachly → Share → Copy Link
+//
+// Format reference:
+//   App Store:  https://apps.apple.com/app/coachly/id1234567890
+//   Play Store: https://play.google.com/store/apps/details?id=com.qup.coachly
+const APP_STORE_URL = "https://apps.apple.com/app/coachly/id6766060889";
+
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.qup.coachly";
+
 export default function HomePage() {
   const router = useRouter();
   const [lang, setLang] = useState("en");
@@ -145,14 +163,78 @@ export default function HomePage() {
           <br />
           {t.appStoreDownload}
         </p>
-        <div className="flex gap-3">
-          <button className="px-5 py-3 rounded-xl bg-brand-darker text-white text-sm font-semibold shadow-md">
-            {t.appStore}
-          </button>
-          <button className="px-5 py-3 rounded-xl bg-brand-darker text-white text-sm font-semibold shadow-md">
-            ▶ {t.googlePlay}
-          </button>
+
+        {/* Store buttons — visible, working anchors with logos */}
+        <div className="flex gap-3 flex-wrap justify-center">
+          <a
+            href={APP_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 rounded-xl text-white text-sm font-semibold shadow-md transition-colors flex items-center gap-2"
+            style={{ backgroundColor: "#2d4a6e" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1a2c3d")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#2d4a6e")
+            }
+            aria-label={t.appStore ?? "App Store"}
+          >
+            {/* Apple logo */}
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+            </svg>
+            {t.appStore ?? "App Store"}
+          </a>
+
+          <a
+            href={PLAY_STORE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 rounded-xl text-white text-sm font-semibold shadow-md transition-colors flex items-center gap-2"
+            style={{ backgroundColor: "#2d4a6e" }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = "#1a2c3d")
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = "#2d4a6e")
+            }
+            aria-label={t.googlePlay ?? "Google Play"}
+          >
+            {/* Google Play logo (4-color triangle) */}
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                d="M3.609 1.814 13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92z"
+                fill="#34a853"
+              />
+              <path
+                d="m13.792 12 3.064-3.064 4.493 2.557a1 1 0 0 1 0 1.014l-4.493 2.557L13.792 12z"
+                fill="#fbbc04"
+              />
+              <path
+                d="m16.856 8.936-3.064 3.064L3.61 1.814a.996.996 0 0 1 .998-.014l12.248 7.136z"
+                fill="#ea4335"
+              />
+              <path
+                d="m13.792 12 3.064 3.064L4.608 22.2a.996.996 0 0 1-.998-.014L13.792 12z"
+                fill="#4285f4"
+              />
+            </svg>
+            {t.googlePlay ?? "Google Play"}
+          </a>
         </div>
+
         <div className="flex flex-wrap gap-3 justify-center">
           {LANGUAGES.map((l) => (
             <button
@@ -171,8 +253,8 @@ export default function HomePage() {
         <footer className="mt-12 text-center text-xs text-slate-500">
           <p>
             {t.copyright} ·{" "}
-            <a
-              href={"mailto:" + t.contact}
+            
+             <a href={"mailto:" + t.contact}
               className="text-brand hover:underline"
             >
               {t.contact}
@@ -183,6 +265,7 @@ export default function HomePage() {
     </main>
   );
 }
+
 function InputCard({
   t,
   lang,
