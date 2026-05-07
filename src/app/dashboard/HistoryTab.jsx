@@ -1,10 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useMemo } from 'react';
-
-const A = '#4A7AB5', AD = '#2D4A6E', BG = '#EEF2F7';
-const SU = '#FFFFFF', BO = '#D0DCEA', TX = '#1A2C3D', MU = '#7A9AB8';
-const BUCKET_COLORS = { 5:'#22C55E', 4:'#86EFAC', 3:'#F59E0B', 2:'#F97316', 1:'#EF4444' };
+import { useState, useMemo } from "react";
+const A = "var(--accent)",
+  AD = "var(--accent-strong)",
+  BG = "var(--bg)";
+const SU = "var(--card)",
+  BO = "var(--card-border)",
+  TX = "var(--text)",
+  MU = "var(--text-muted)";
+const BUCKET_COLORS = {
+  5: "#22C55E",
+  4: "#86EFAC",
+  3: "#F59E0B",
+  2: "#F97316",
+  1: "#EF4444",
+};
 
 function bucketOf(score) {
   if (score == null) return null;
@@ -16,8 +26,11 @@ function bucketOf(score) {
 }
 
 const TYPE_COLORS = {
-  strength: '#4A7AB5', cardio: '#F59E0B', mobility: '#22C55E',
-  recovery: '#9CA3AF', other: '#6B7280',
+  strength: "#4A7AB5",
+  cardio: "#F59E0B",
+  mobility: "#22C55E",
+  recovery: "#9CA3AF",
+  other: "#6B7280",
 };
 
 function totalMinutes(log) {
@@ -32,7 +45,9 @@ function totalMinutes(log) {
 // (authoritative since the schema migration); fall back to grouping
 // workouts by type if categoryDurations is empty/missing.
 function buildChips(log) {
-  const catDurs = Array.isArray(log.categoryDurations) ? log.categoryDurations : [];
+  const catDurs = Array.isArray(log.categoryDurations)
+    ? log.categoryDurations
+    : [];
   if (catDurs.length > 0) {
     return catDurs.map((c) => ({
       type: c.type,
@@ -42,7 +57,7 @@ function buildChips(log) {
   const workouts = Array.isArray(log.workouts) ? log.workouts : [];
   if (workouts.length === 0) return [];
   const byType = workouts.reduce((acc, w) => {
-    const k = w.type || 'other';
+    const k = w.type || "other";
     acc[k] = (acc[k] || 0) + (w.durationMinutes || 0);
     return acc;
   }, {});
@@ -50,8 +65,8 @@ function buildChips(log) {
 }
 
 function categoryLabel(type, t) {
-  if (!type) return '—';
-  const key = 'category' + type.charAt(0).toUpperCase() + type.slice(1);
+  if (!type) return "—";
+  const key = "category" + type.charAt(0).toUpperCase() + type.slice(1);
   return t[key] ?? type;
 }
 
@@ -60,17 +75,17 @@ function HistoryRow({ log, score, t, includeNotes }) {
 
   const bucket = bucketOf(score?.compositeScore);
   const minutes = totalMinutes(log);
-  const dotColor = bucket ? BUCKET_COLORS[bucket] : '#D1D5DB';
+  const dotColor = bucket ? BUCKET_COLORS[bucket] : "#D1D5DB";
   const chips = buildChips(log);
 
   // One-line summary — comma-separated category names from the chips
   // (matches what's actually shown when expanded, and isn't duplicated
   // when the same type appears in multiple workouts).
   const typeLabel = log.isRestDay
-    ? (t.restDay ?? 'Rest day')
+    ? (t.restDay ?? "Rest day")
     : chips.length === 0
-      ? '—'
-      : chips.map((c) => categoryLabel(c.type, t)).join(' · ');
+      ? "—"
+      : chips.map((c) => categoryLabel(c.type, t)).join(" · ");
 
   return (
     <div
@@ -80,13 +95,19 @@ function HistoryRow({ log, score, t, includeNotes }) {
       {/* One-line header (always visible, clickable) */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:hover-bg-soft transition-colors"
       >
         {/* Score dot */}
-        <div className="w-2 h-8 rounded-full flex-shrink-0" style={{ background: dotColor }} />
+        <div
+          className="w-2 h-8 rounded-full flex-shrink-0"
+          style={{ background: dotColor }}
+        />
 
         {/* Date */}
-        <div className="font-bold text-sm w-24 flex-shrink-0" style={{ color: TX }}>
+        <div
+          className="font-bold text-sm w-24 flex-shrink-0"
+          style={{ color: TX }}
+        >
           {log.date}
         </div>
 
@@ -104,16 +125,24 @@ function HistoryRow({ log, score, t, includeNotes }) {
 
         {/* Composite score */}
         {score && (
-          <div className="text-sm font-black flex-shrink-0" style={{ color: AD }}>
-            {bucketOf(score.compositeScore) ?? '—'}
-            <span className="text-[10px] font-bold" style={{ color: MU }}>/5</span>
+          <div
+            className="text-sm font-black flex-shrink-0"
+            style={{ color: AD }}
+          >
+            {bucketOf(score.compositeScore) ?? "—"}
+            <span className="text-[10px] font-bold" style={{ color: MU }}>
+              /5
+            </span>
           </div>
         )}
 
         {/* Caret */}
         <div
           className="text-xs flex-shrink-0 transition-transform"
-          style={{ color: MU, transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          style={{
+            color: MU,
+            transform: open ? "rotate(90deg)" : "rotate(0deg)",
+          }}
         >
           ›
         </div>
@@ -130,8 +159,8 @@ function HistoryRow({ log, score, t, includeNotes }) {
                   key={i}
                   className="px-3 py-1 rounded-full text-xs font-semibold"
                   style={{
-                    background: (TYPE_COLORS[c.type] ?? '#6B7280') + '22',
-                    color: TYPE_COLORS[c.type] ?? '#6B7280',
+                    background: (TYPE_COLORS[c.type] ?? "#6B7280") + "22",
+                    color: TYPE_COLORS[c.type] ?? "#6B7280",
                   }}
                 >
                   {categoryLabel(c.type, t)}
@@ -144,17 +173,38 @@ function HistoryRow({ log, score, t, includeNotes }) {
           {/* 5 ratings */}
           <div className="flex gap-3 text-xs mt-3" style={{ color: MU }}>
             {[
-              { label: t.effort ?? 'Effort', val: log.effort, color: '#F59E0B' },
-              { label: t.mood ?? 'Mood', val: log.mood, color: '#4A7AB5' },
-              { label: t.energy ?? 'Energy', val: log.energy, color: '#22C55E' },
-              { label: t.sleep ?? 'Sleep', val: log.sleepQuality, color: '#A855F7' },
-              { label: t.soreness ?? 'Soreness', val: log.soreness, color: '#EF4444' },
+              {
+                label: t.effort ?? "Effort",
+                val: log.effort,
+                color: "#F59E0B",
+              },
+              { label: t.mood ?? "Mood", val: log.mood, color: "#4A7AB5" },
+              {
+                label: t.energy ?? "Energy",
+                val: log.energy,
+                color: "#22C55E",
+              },
+              {
+                label: t.sleep ?? "Sleep",
+                val: log.sleepQuality,
+                color: "#A855F7",
+              },
+              {
+                label: t.soreness ?? "Soreness",
+                val: log.soreness,
+                color: "#EF4444",
+              },
             ].map((m) => (
               <div key={m.label} className="flex-1 text-center">
-                <div className="font-bold text-sm" style={{ color: m.val != null ? m.color : MU }}>
-                  {m.val != null ? m.val : '—'}
+                <div
+                  className="font-bold text-sm"
+                  style={{ color: m.val != null ? m.color : MU }}
+                >
+                  {m.val != null ? m.val : "—"}
                 </div>
-                <div className="text-[9px] uppercase tracking-wider mt-0.5">{m.label}</div>
+                <div className="text-[9px] uppercase tracking-wider mt-0.5">
+                  {m.label}
+                </div>
               </div>
             ))}
           </div>
@@ -163,7 +213,11 @@ function HistoryRow({ log, score, t, includeNotes }) {
           {includeNotes && log.note && (
             <div
               className="mt-3 px-3 py-2 rounded-lg text-sm italic"
-              style={{ background: BG, color: TX, borderLeft: '3px solid ' + A }}
+              style={{
+                background: BG,
+                color: TX,
+                borderLeft: "3px solid " + A,
+              }}
             >
               "{log.note}"
             </div>
@@ -177,19 +231,21 @@ function HistoryRow({ log, score, t, includeNotes }) {
 export default function HistoryTab({ logs, scores, t, includeNotes }) {
   const scoreByDate = useMemo(() => {
     const m = {};
-    (scores || []).forEach((s) => { if (s.date) m[s.date] = s; });
+    (scores || []).forEach((s) => {
+      if (s.date) m[s.date] = s;
+    });
     return m;
   }, [scores]);
 
   const sorted = useMemo(
     () => [...(logs || [])].sort((a, b) => (a.date < b.date ? 1 : -1)),
-    [logs]
+    [logs],
   );
 
   if (!sorted.length) {
     return (
       <div className="text-center py-16" style={{ color: MU }}>
-        {t.noLogs ?? 'No logs in this share window.'}
+        {t.noLogs ?? "No logs in this share window."}
       </div>
     );
   }

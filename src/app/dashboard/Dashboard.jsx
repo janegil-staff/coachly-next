@@ -10,14 +10,19 @@ import { getCatalogItemName } from "@/lib/exerciseCatalog";
 import { getTranslations } from "@/lib/translations";
 import GoalsRadarChart from "@/components/dashboard/GoalsRadarChart";
 import StatRibbon from "@/components/dashboard/StatRibbon";
-const A = "#4A7AB5",
-  AD = "#2D4A6E",
-  AL = "#DDE8F4",
-  BG = "#EEF2F7";
-const SU = "#FFFFFF",
-  BO = "#D0DCEA",
-  TX = "#1A2C3D",
-  MU = "#7A9AB8";
+import ThemeToggle from "@/components/ThemeToggle";
+
+const A      = "var(--accent)";
+const AD     = "var(--accent-strong)";
+const AL     = "var(--accent-soft)";
+const SU     = "var(--card)";
+const BG     = "var(--bg)";
+const BO     = "var(--card-border)";
+const TX     = "var(--text)";
+const MU     = "var(--text-muted)";
+const OK     = "var(--ok)";
+const WARN   = "var(--warn)";
+const DANGER = "var(--danger)";
 
 const BUCKET_COLORS = {
   5: "#22C55E",
@@ -147,6 +152,7 @@ function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
               {profile.weightKg}kg
             </span>
           )}
+          <ThemeToggle />
           <button
             onClick={onPdf}
             disabled={pdfBusy}

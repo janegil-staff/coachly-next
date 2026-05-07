@@ -19,15 +19,15 @@
 
 import { useState, useMemo } from "react";
 
-const A = "#4A7AB5",
-  AD = "#2D4A6E",
-  BG = "#EEF2F7",
-  SU = "#FFFFFF",
-  BO = "#D0DCEA",
-  TX = "#1A2C3D",
-  MU = "#7A9AB8",
-  OK = "#22C55E";
-
+const A = "var(--accent)",
+  AD = "var(--accent-strong)",
+  BG = "var(--bg)",
+  SU = "var(--card)",
+  BO = "var(--card-border)",
+  TX = "var(--text)",
+  MU = "var(--text-muted)",
+  OK = "var(--ok)";
+  
 const CATEGORY_META = {
   training: { color: "#4A7AB5", icon: "🏋" },
   recovery: { color: "#22C55E", icon: "🌿" },

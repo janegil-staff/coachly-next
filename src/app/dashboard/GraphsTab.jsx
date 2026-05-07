@@ -1,16 +1,24 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
-  BarChart, Bar,
-} from 'recharts';
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  CartesianGrid,
+  BarChart,
+  Bar,
+} from "recharts";
 
-import GoalsRadarChart from '@/components/dashboard/GoalsRadarChart';
-import WellbeingRadarChart from '@/components/dashboard/WellbeingRadarChart';
-import CategoryMixDonut from '@/components/dashboard/CategoryMixDonut';
-import WeeklyVolumeBars from '@/components/dashboard/WeeklyVolumeBars';
-import HeatmapChart from '@/components/dashboard/HeatmapChart';
+import GoalsRadarChart from "@/components/dashboard/GoalsRadarChart";
+import WellbeingRadarChart from "@/components/dashboard/WellbeingRadarChart";
+import CategoryMixDonut from "@/components/dashboard/CategoryMixDonut";
+import WeeklyVolumeBars from "@/components/dashboard/WeeklyVolumeBars";
+import HeatmapChart from "@/components/dashboard/HeatmapChart";
 
 function bucketOf(score) {
   if (score == null) return null;
@@ -46,26 +54,39 @@ function totalMinutes(log) {
   return 0;
 }
 
-const A = '#4A7AB5', SU = '#FFFFFF', BO = '#D0DCEA', TX = '#1A2C3D', MU = '#7A9AB8';
-
+const A = "var(--accent)",
+  SU = "var(--card)",
+  BO = "var(--card-border)",
+  TX = "var(--text)",
+  MU = "var(--text-muted)";
 const RANGES = [
-  { key: '7d',  days: 7,    labelKey: 'rangeLast7Days',  fallback: 'Last 7 days'  },
-  { key: '30d', days: 30,   labelKey: 'rangeLast30Days', fallback: 'Last 30 days' },
-  { key: '90d', days: 90,   labelKey: 'rangeLast90Days', fallback: 'Last 90 days' },
-  { key: 'all', days: null, labelKey: 'rangeAllTime',    fallback: 'All time'     },
+  { key: "7d", days: 7, labelKey: "rangeLast7Days", fallback: "Last 7 days" },
+  {
+    key: "30d",
+    days: 30,
+    labelKey: "rangeLast30Days",
+    fallback: "Last 30 days",
+  },
+  {
+    key: "90d",
+    days: 90,
+    labelKey: "rangeLast90Days",
+    fallback: "Last 90 days",
+  },
+  { key: "all", days: null, labelKey: "rangeAllTime", fallback: "All time" },
 ];
 
 export default function GraphsTab({ logs, scores, latestGoals, t }) {
-  const [range, setRange] = useState('30d');
+  const [range, setRange] = useState("30d");
 
   const sortedLogs = useMemo(
     () => [...(logs || [])].sort((a, b) => (a.date < b.date ? -1 : 1)),
-    [logs]
+    [logs],
   );
 
   const sortedScores = useMemo(
     () => [...(scores || [])].sort((a, b) => (a.date < b.date ? -1 : 1)),
-    [scores]
+    [scores],
   );
 
   const cutoffStr = useMemo(() => {
@@ -77,13 +98,17 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
   }, [range]);
 
   const filteredLogs = useMemo(
-    () => (cutoffStr ? sortedLogs.filter((l) => l.date >= cutoffStr) : sortedLogs),
-    [sortedLogs, cutoffStr]
+    () =>
+      cutoffStr ? sortedLogs.filter((l) => l.date >= cutoffStr) : sortedLogs,
+    [sortedLogs, cutoffStr],
   );
 
   const filteredScores = useMemo(
-    () => (cutoffStr ? sortedScores.filter((s) => s.date >= cutoffStr) : sortedScores),
-    [sortedScores, cutoffStr]
+    () =>
+      cutoffStr
+        ? sortedScores.filter((s) => s.date >= cutoffStr)
+        : sortedScores,
+    [sortedScores, cutoffStr],
   );
 
   const scoreData = filteredScores.map((s) => ({
@@ -129,8 +154,7 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
   const Card = ({ title, children, fullWidth = false, headerExtra = null }) => (
     <div
       className={
-        'rounded-2xl border shadow-sm p-4 ' +
-        (fullWidth ? 'md:col-span-2' : '')
+        "rounded-2xl border shadow-sm p-4 " + (fullWidth ? "md:col-span-2" : "")
       }
       style={{ background: SU, borderColor: BO }}
     >
@@ -143,15 +167,18 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
         </div>
         {headerExtra}
       </div>
-      <div style={{ width: '100%' }}>
-        {children}
-      </div>
+      <div style={{ width: "100%" }}>{children}</div>
     </div>
   );
 
-  const ChartCard = ({ title, children, fullWidth = false, headerExtra = null }) => (
+  const ChartCard = ({
+    title,
+    children,
+    fullWidth = false,
+    headerExtra = null,
+  }) => (
     <Card title={title} fullWidth={fullWidth} headerExtra={headerExtra}>
-      <div style={{ width: '100%', height: 220 }}>
+      <div style={{ width: "100%", height: 220 }}>
         <ResponsiveContainer>{children}</ResponsiveContainer>
       </div>
     </Card>
@@ -178,8 +205,8 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
         const isActive = range === r.key;
         const baseLabel = t?.[r.labelKey] ?? r.fallback;
         const label =
-          r.key === 'all'
-            ? `${baseLabel} (${sortedLogs.length} ${t?.entries ?? 'entries'})`
+          r.key === "all"
+            ? `${baseLabel} (${sortedLogs.length} ${t?.entries ?? "entries"})`
             : baseLabel;
         return (
           <button
@@ -189,8 +216,12 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
             className="px-3 py-1.5 rounded-full text-xs font-semibold tracking-wide transition-colors"
             style={
               isActive
-                ? { background: A, color: '#fff', borderColor: A }
-                : { background: 'transparent', color: TX, border: `1px solid ${BO}` }
+                ? { background: A, color: "#fff", borderColor: A }
+                : {
+                    background: "transparent",
+                    color: TX,
+                    border: `1px solid ${BO}`,
+                  }
             }
           >
             {label}
@@ -203,7 +234,7 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
   if (!sortedLogs.length) {
     return (
       <div className="text-center py-16" style={{ color: MU }}>
-        {t.noLogs ?? 'No data to graph.'}
+        {t.noLogs ?? "No data to graph."}
       </div>
     );
   }
@@ -212,12 +243,15 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
 
   const weightDeltaLabel = (() => {
     if (!weightStats) return null;
-    const sign = weightStats.delta > 0 ? '+' : weightStats.delta < 0 ? '−' : '±';
+    const sign =
+      weightStats.delta > 0 ? "+" : weightStats.delta < 0 ? "−" : "±";
     const abs = Math.abs(weightStats.delta).toFixed(1);
-    return `${sign}${abs} ${t?.kg ?? 'kg'}`;
+    return `${sign}${abs} ${t?.kg ?? "kg"}`;
   })();
 
-  const goalsAnswers = Array.isArray(latestGoals?.answers) ? latestGoals.answers : [];
+  const goalsAnswers = Array.isArray(latestGoals?.answers)
+    ? latestGoals.answers
+    : [];
   const hasGoals = goalsAnswers.length === 5;
 
   return (
@@ -226,22 +260,19 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
 
       {filteredEmpty ? (
         <div className="text-center py-16" style={{ color: MU }}>
-          {t.noLogsInRange ?? 'No data in this range.'}
+          {t.noLogsInRange ?? "No data in this range."}
         </div>
       ) : (
         <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-
           {/* ━━━ SNAPSHOTS ━━━ */}
-          <SectionHeader>
-            {t.snapshots ?? 'Snapshots'}
-          </SectionHeader>
+          <SectionHeader>{t.snapshots ?? "Snapshots"}</SectionHeader>
 
-          <Card title={t.wellbeingBalance ?? 'Wellbeing balance'}>
+          <Card title={t.wellbeingBalance ?? "Wellbeing balance"}>
             <WellbeingRadarChart logs={filteredLogs} t={t} />
           </Card>
 
           {hasGoals ? (
-            <Card title={t.goalsTitle ?? 'Goal check-in'}>
+            <Card title={t.goalsTitle ?? "Goal check-in"}>
               <GoalsRadarChart
                 answers={goalsAnswers}
                 status={latestGoals?.scores?.status}
@@ -249,26 +280,34 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
               />
             </Card>
           ) : (
-            <Card title={t.goalsTitle ?? 'Goal check-in'}>
-              <div className="text-center py-12 text-xs italic" style={{ color: MU }}>
-                {t.goalsNever ?? 'Not completed'}
+            <Card title={t.goalsTitle ?? "Goal check-in"}>
+              <div
+                className="text-center py-12 text-xs italic"
+                style={{ color: MU }}
+              >
+                {t.goalsNever ?? "Not completed"}
               </div>
             </Card>
           )}
 
-          <Card title={t.categoryMix ?? 'Category mix'}>
+          <Card title={t.categoryMix ?? "Category mix"}>
             <CategoryMixDonut logs={filteredLogs} t={t} />
           </Card>
 
-          <Card title={t.heatmap ?? 'Heatmap'}>
-            <HeatmapChart logs={sortedLogs} scores={sortedScores} weeks={26} t={t} />
+          <Card title={t.heatmap ?? "Heatmap"}>
+            <HeatmapChart
+              logs={sortedLogs}
+              scores={sortedScores}
+              weeks={26}
+              t={t}
+            />
           </Card>
 
-          <Card title={t.weeklyVolume ?? 'Weekly volume'}>
+          <Card title={t.weeklyVolume ?? "Weekly volume"}>
             <WeeklyVolumeBars logs={sortedLogs} weeks={12} t={t} />
           </Card>
 
-          <ChartCard title={t.dailyMinutes ?? 'Daily minutes'}>
+          <ChartCard title={t.dailyMinutes ?? "Daily minutes"}>
             <BarChart data={minutesData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke={MU} fontSize={10} />
@@ -279,31 +318,45 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
           </ChartCard>
 
           {/* ━━━ TRENDS ━━━ */}
-          <SectionHeader>
-            {t.trends ?? 'Trends'}
-          </SectionHeader>
+          <SectionHeader>{t.trends ?? "Trends"}</SectionHeader>
 
-          <ChartCard title={t.compositeScore ?? 'Composite score'}>
+          <ChartCard title={t.compositeScore ?? "Composite score"}>
             <LineChart data={scoreData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke={MU} fontSize={10} />
-              <YAxis domain={[0, 5]} stroke={MU} fontSize={10} ticks={[0, 1, 2, 3, 4, 5]} />
+              <YAxis
+                domain={[0, 5]}
+                stroke={MU}
+                fontSize={10}
+                ticks={[0, 1, 2, 3, 4, 5]}
+              />
               <Tooltip />
-              <Line type="monotone" dataKey="score" stroke={A} strokeWidth={2} dot={{ r: 3 }} />
+              <Line
+                type="monotone"
+                dataKey="score"
+                stroke={A}
+                strokeWidth={2}
+                dot={{ r: 3 }}
+              />
             </LineChart>
           </ChartCard>
 
-          <ChartCard title={(t.mood ?? 'Mood') + ' & ' + (t.energy ?? 'Energy')}>
+          <ChartCard
+            title={(t.mood ?? "Mood") + " & " + (t.energy ?? "Energy")}
+          >
             <LineChart data={moodEnergyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke={MU} fontSize={10} />
               <YAxis domain={[0, 5]} stroke={MU} fontSize={10} />
               <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} iconType="circle" />
+              <Legend
+                wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                iconType="circle"
+              />
               <Line
                 type="monotone"
                 dataKey="mood"
-                name={t.mood ?? 'Mood'}
+                name={t.mood ?? "Mood"}
                 stroke="#4A7AB5"
                 strokeWidth={2}
                 dot={{ r: 2 }}
@@ -311,7 +364,7 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
               <Line
                 type="monotone"
                 dataKey="energy"
-                name={t.energy ?? 'Energy'}
+                name={t.energy ?? "Energy"}
                 stroke="#22C55E"
                 strokeWidth={2}
                 dot={{ r: 2 }}
@@ -319,17 +372,22 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
             </LineChart>
           </ChartCard>
 
-          <ChartCard title={(t.sleep ?? 'Sleep') + ' & ' + (t.soreness ?? 'Soreness')}>
+          <ChartCard
+            title={(t.sleep ?? "Sleep") + " & " + (t.soreness ?? "Soreness")}
+          >
             <LineChart data={sleepSorenessData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis dataKey="date" stroke={MU} fontSize={10} />
               <YAxis domain={[0, 5]} stroke={MU} fontSize={10} />
               <Tooltip />
-              <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} iconType="circle" />
+              <Legend
+                wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                iconType="circle"
+              />
               <Line
                 type="monotone"
                 dataKey="sleep"
-                name={t.sleep ?? 'Sleep'}
+                name={t.sleep ?? "Sleep"}
                 stroke="#A855F7"
                 strokeWidth={2}
                 dot={{ r: 2 }}
@@ -337,7 +395,7 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
               <Line
                 type="monotone"
                 dataKey="soreness"
-                name={t.soreness ?? 'Soreness'}
+                name={t.soreness ?? "Soreness"}
                 stroke="#EF4444"
                 strokeWidth={2}
                 dot={{ r: 2 }}
@@ -347,7 +405,7 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
 
           {weightData.length > 0 && (
             <ChartCard
-              title={t.weight ?? 'Weight'}
+              title={t.weight ?? "Weight"}
               headerExtra={
                 weightDeltaLabel ? (
                   <span
@@ -355,10 +413,10 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
                     style={{
                       color:
                         weightStats.delta > 0
-                          ? '#EF4444'
+                          ? "#EF4444"
                           : weightStats.delta < 0
-                          ? '#22C55E'
-                          : MU,
+                            ? "#22C55E"
+                            : MU,
                     }}
                   >
                     {weightDeltaLabel}
@@ -372,11 +430,14 @@ export default function GraphsTab({ logs, scores, latestGoals, t }) {
                 <YAxis
                   stroke={MU}
                   fontSize={10}
-                  domain={['dataMin - 1', 'dataMax + 1']}
+                  domain={["dataMin - 1", "dataMax + 1"]}
                   tickFormatter={(v) => v.toFixed(1)}
                 />
                 <Tooltip
-                  formatter={(v) => [`${Number(v).toFixed(1)} ${t?.kg ?? 'kg'}`, t?.weight ?? 'Weight']}
+                  formatter={(v) => [
+                    `${Number(v).toFixed(1)} ${t?.kg ?? "kg"}`,
+                    t?.weight ?? "Weight",
+                  ]}
                 />
                 <Line
                   type="monotone"

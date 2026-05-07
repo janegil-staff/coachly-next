@@ -23,13 +23,12 @@ import {
   Cell,
 } from "recharts";
 
-const A = "#4a7ab5",
-  AD = "#2d4a6e",
-  BO = "#d0dcea",
-  MU = "#7a9ab8";
-const SU = "#ffffff",
-  BG = "#eef2f7";
-
+const A = "var(--accent)",
+  AD = "var(--accent-strong)",
+  BO = "var(--card-border)",
+  MU = "var(--text-muted)";
+const SU = "var(--card)",
+  BG = "var(--bg)";
 // Category palette — must match the dashboard's category coloring
 const CAT_COLORS = {
   strength: "#7986cb",
