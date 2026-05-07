@@ -4,26 +4,16 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getTranslations, LANGUAGES } from "@/lib/translations";
+import ThemeToggle from "@/components/ThemeToggle";
+import { useTheme } from "@/context/ThemeContext";
 
 // ─── Store URLs ──────────────────────────────────────────────────────────
-// Update these once your apps are live in their stores.
-//
-// To find the App Store URL once Coachly is approved:
-//   App Store Connect → Coachly → top of page shows the URL
-//   OR on iPhone: search Coachly → Share → Copy Link
-//
-// To find the Play Store URL once Coachly is approved:
-//   Play Console → Coachly → package name (e.g. com.qup.coachly)
-//   OR on Android: search Coachly → Share → Copy Link
-//
-// Format reference:
-//   App Store:  https://apps.apple.com/app/coachly/id1234567890
-//   Play Store: https://play.google.com/store/apps/details?id=com.qup.coachly
 const APP_STORE_URL = "https://apps.apple.com/app/coachly/id6766060889";
-
-const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.qup.coachly";
+const PLAY_STORE_URL =
+  "https://play.google.com/store/apps/details?id=com.qup.coachly";
 
 export default function HomePage() {
+  const { theme } = useTheme();
   const router = useRouter();
   const [lang, setLang] = useState("en");
   const [code, setCode] = useState("");
@@ -65,12 +55,26 @@ export default function HomePage() {
 
   return (
     <main className="mx-auto max-w-7xl px-6 py-10">
+      {/* Theme toggle in top-right corner */}
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          right: 16,
+          zIndex: 50,
+        }}
+      >
+        <ThemeToggle />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_440px] gap-10 items-start">
         <div className="flex flex-col gap-10">
-          {/* CHANGE 1: header gets order-1 on mobile, resets on desktop */}
           <div className="max-w-2xl order-1 lg:order-none">
             <div className="flex items-center gap-3">
-              <div className="w-14 h-14 rounded-xl bg-brand flex items-center justify-center shadow-md">
+              <div
+                className="w-14 h-14 rounded-xl flex items-center justify-center shadow-md"
+                style={{ background: "var(--accent)" }}
+              >
                 <Image
                   src="/coachly-logo.png"
                   alt="Coachly"
@@ -80,22 +84,32 @@ export default function HomePage() {
                 />
               </div>
               <div>
-                <h1 className="text-4xl font-bold text-brand-darker leading-tight">
+                <h1
+                  className="text-4xl font-bold leading-tight"
+                  style={{ color: "var(--accent-strong)" }}
+                >
                   Your Coachly
                 </h1>
-                <p className="mt-1 text-brand-light tracking-wider text-xs font-semibold">
+                <p
+                  className="mt-1 tracking-wider text-xs font-semibold"
+                  style={{ color: "var(--accent)" }}
+                >
                   {t.heroTagline}
                 </p>
               </div>
             </div>
-            <p className="mt-5 text-slate-700 leading-relaxed">{t.heroDesc}</p>
+            <p
+              className="mt-5 leading-relaxed"
+              style={{ color: "var(--text)" }}
+            >
+              {t.heroDesc}
+            </p>
           </div>
 
-          {/* CHANGE 2: phones get order-3 on mobile so they appear last */}
           <div className="flex justify-center lg:justify-start items-end gap-3 sm:gap-5 order-3 lg:order-none">
             <div className="hidden sm:block w-[130px] sm:w-[150px] lg:w-[170px] drop-shadow-2xl">
               <Image
-                src="/screenshots/login.png"
+                src={`/screenshots/login-${theme}.png`}
                 alt="Coachly login"
                 width={440}
                 height={950}
@@ -105,7 +119,7 @@ export default function HomePage() {
             </div>
             <div className="w-[160px] sm:w-[180px] lg:w-[200px] -mb-4 drop-shadow-2xl">
               <Image
-                src="/screenshots/home.png"
+                src={`/screenshots/countdown-${theme}.png`}
                 alt="Coachly home"
                 width={440}
                 height={950}
@@ -115,7 +129,7 @@ export default function HomePage() {
             </div>
             <div className="hidden sm:block w-[130px] sm:w-[150px] lg:w-[170px] drop-shadow-2xl">
               <Image
-                src="/screenshots/diary.png"
+                src={`/screenshots/diary-${theme}.png`}
                 alt="Coachly diary"
                 width={440}
                 height={950}
@@ -124,8 +138,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* CHANGE 3: NEW — input form rendered INSIDE the left column on mobile only.
-              On desktop (lg+) this is hidden and the original right-column form below shows. */}
           <div className="order-2 lg:hidden flex flex-col gap-3 w-full max-w-md mx-auto">
             <InputCard
               t={t}
@@ -141,7 +153,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Original right-column form — hidden on mobile, shown lg+ */}
         <div className="hidden lg:flex flex-col gap-3 w-full max-w-md mx-auto lg:mx-0">
           <InputCard
             t={t}
@@ -158,29 +169,29 @@ export default function HomePage() {
       </div>
 
       <div className="mt-16 flex flex-col items-center gap-6">
-        <p className="text-slate-500 text-sm text-center max-w-md">
+        <p
+          className="text-sm text-center max-w-md"
+          style={{ color: "var(--text-muted)" }}
+        >
           {t.appStoreAvailable}
           <br />
           {t.appStoreDownload}
         </p>
 
-        {/* Store buttons — visible, working anchors with logos */}
+        {/* Store buttons */}
         <div className="flex gap-3 flex-wrap justify-center">
           <a
             href={APP_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="px-6 py-3 rounded-xl text-white text-sm font-semibold shadow-md transition-colors flex items-center gap-2"
-            style={{ backgroundColor: "#2d4a6e" }}
+            style={{ backgroundColor: "var(--accent-strong)" }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#1a2c3d")
+              (e.currentTarget.style.opacity = "0.85")
             }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#2d4a6e")
-            }
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             aria-label={t.appStore ?? "App Store"}
           >
-            {/* Apple logo */}
             <svg
               width="20"
               height="20"
@@ -198,22 +209,14 @@ export default function HomePage() {
             target="_blank"
             rel="noopener noreferrer"
             className="px-6 py-3 rounded-xl text-white text-sm font-semibold shadow-md transition-colors flex items-center gap-2"
-            style={{ backgroundColor: "#2d4a6e" }}
+            style={{ backgroundColor: "var(--accent-strong)" }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#1a2c3d")
+              (e.currentTarget.style.opacity = "0.85")
             }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#2d4a6e")
-            }
+            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             aria-label={t.googlePlay ?? "Google Play"}
           >
-            {/* Google Play logo (4-color triangle) */}
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 d="M3.609 1.814 13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92z"
                 fill="#34a853"
@@ -250,12 +253,17 @@ export default function HomePage() {
             </button>
           ))}
         </div>
-        <footer className="mt-12 text-center text-xs text-slate-500">
+
+        <footer
+          className="mt-12 text-center text-xs"
+          style={{ color: "var(--text-muted)" }}
+        >
           <p>
             {t.copyright} ·{" "}
-            
-             <a href={"mailto:" + t.contact}
-              className="text-brand hover:underline"
+            <a
+              href={"mailto:" + t.contact}
+              className="hover:underline"
+              style={{ color: "var(--accent)" }}
             >
               {t.contact}
             </a>
@@ -284,7 +292,12 @@ function InputCard({
           aria-label={t.chooseLanguage}
           value={lang}
           onChange={(e) => setLang(e.target.value)}
-          className="w-full appearance-none px-4 py-3 pr-10 rounded-xl border border-slate-200 bg-white text-base font-medium shadow-sm hover:border-brand-lighter focus:outline-none focus:ring-2 focus:ring-brand-lighter"
+          className="w-full appearance-none px-4 py-3 pr-10 rounded-xl text-base font-medium shadow-sm focus:outline-none focus:ring-2"
+          style={{
+            background: "var(--card)",
+            color: "var(--text)",
+            border: "1px solid var(--card-border)",
+          }}
         >
           {LANGUAGES.map((l) => (
             <option key={l.code} value={l.code}>
@@ -292,16 +305,26 @@ function InputCard({
             </option>
           ))}
         </select>
-        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+        <span
+          className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2"
+          style={{ color: "var(--text-muted)" }}
+        >
           ▼
         </span>
       </div>
 
       <form
         onSubmit={submit}
-        className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden"
+        className="rounded-3xl shadow-xl overflow-hidden"
+        style={{
+          background: "var(--card)",
+          border: "1px solid var(--card-border)",
+        }}
       >
-        <div className="relative w-full aspect-[3/2] bg-slate-50 overflow-hidden">
+        <div
+          className="relative w-full aspect-[3/2] overflow-hidden"
+          style={{ background: "var(--accent-soft)" }}
+        >
           <Image
             src="/illustrations/card-hero.png"
             alt="Coaches"
@@ -312,10 +335,16 @@ function InputCard({
           />
         </div>
         <div className="p-7">
-          <h2 className="text-center text-sm font-bold tracking-widest text-brand mb-5">
+          <h2
+            className="text-center text-sm font-bold tracking-widest mb-5"
+            style={{ color: "var(--accent)" }}
+          >
             {t.importDataTitle}
           </h2>
-          <label className="block text-xs font-semibold tracking-wider text-slate-600 mb-2">
+          <label
+            className="block text-xs font-semibold tracking-wider mb-2"
+            style={{ color: "var(--text-muted)" }}
+          >
             {t.codeLabel}
           </label>
           <input
@@ -330,18 +359,33 @@ function InputCard({
             }}
             placeholder={t.codePlaceholder}
             disabled={submitting}
-            className="w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50 text-1xl tracking-[0.5em] text-center font-bold text-brand-darker focus:outline-none focus:ring-2 focus:ring-brand-lighter disabled:opacity-60"
+            className="w-full px-4 py-3 rounded-xl text-1xl tracking-[0.5em] text-center font-bold focus:outline-none focus:ring-2 disabled:opacity-60"
+            style={{
+              background: "var(--accent-soft)",
+              color: "var(--accent-strong)",
+              border: "1px solid var(--card-border)",
+            }}
           />
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {error && (
+            <p
+              className="mt-2 text-sm"
+              style={{ color: "var(--danger)" }}
+            >
+              {error}
+            </p>
+          )}
           <button
             type="submit"
             disabled={submitting}
-            style={{ backgroundColor: "#4a7ab5" }}
+            style={{
+              backgroundColor: "var(--accent)",
+            }}
             onMouseEnter={(e) =>
-              (e.currentTarget.style.backgroundColor = "#2d4a6e")
+              (e.currentTarget.style.backgroundColor =
+                "var(--accent-strong)")
             }
             onMouseLeave={(e) =>
-              (e.currentTarget.style.backgroundColor = "#4a7ab5")
+              (e.currentTarget.style.backgroundColor = "var(--accent)")
             }
             className="mt-5 w-full py-4 rounded-xl text-white text-sm font-black tracking-widest shadow-lg transition-colors disabled:opacity-60"
           >
