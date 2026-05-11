@@ -8,6 +8,10 @@ export const TYPE_COLORS = {
   other: "#6B7280",
 };
 
+// Resolve a workout type to its display color, with a safe fallback for
+// unknown types (e.g. legacy data, custom categories).
+export const tc = (type) => TYPE_COLORS[type] ?? "#6B7280";
+
 export const BUCKET_COLORS = {
   5: "#22C55E",
   4: "#86EFAC",
