@@ -12,16 +12,23 @@ import GoalsRadarChart from "@/components/dashboard/GoalsRadarChart";
 import StatRibbon from "@/components/dashboard/StatRibbon";
 import ThemeToggle from "@/components/ThemeToggle";
 
-const A      = "var(--accent)";
-const AD     = "var(--accent-strong)";
-const AL     = "var(--accent-soft)";
-const SU     = "var(--card)";
-const BG     = "var(--bg)";
-const BO     = "var(--card-border)";
-const TX     = "var(--text)";
-const MU     = "var(--text-muted)";
-const OK     = "var(--ok)";
-const WARN   = "var(--warn)";
+// Snapshot components — mirrors recover's coach dashboard
+import WellnessIndex from "@/components/dashboard/calendar/WellnessIndex";
+import WellnessSparkline from "@/components/dashboard/calendar/WellnessSparkline";
+import StreakComparison from "@/components/dashboard/calendar/StreakComparison";
+import MonthlyTrendsCard from "@/components/dashboard/calendar/MonthlyTrendsCard";
+import YearInPixels from "@/components/dashboard/calendar/YearInPixels";
+
+const A = "var(--accent)";
+const AD = "var(--accent-strong)";
+const AL = "var(--accent-soft)";
+const SU = "var(--card)";
+const BG = "var(--bg)";
+const BO = "var(--card-border)";
+const TX = "var(--text)";
+const MU = "var(--text-muted)";
+const OK = "var(--ok)";
+const WARN = "var(--warn)";
 const DANGER = "var(--danger)";
 
 const BUCKET_COLORS = {
@@ -77,6 +84,100 @@ const GOALS_STATUS_COLORS = {
   ontrack: "#4A7AB5",
   strong: "#22C55E",
 };
+
+// ── Note bubble SVG ─────────────────────────────────────────────────────
+function NoteIcon({ size = 14 }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 10 10"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect x="1" y="1" width="8" height="6" rx="1.5" fill="#4a9eca" />
+      <polygon points="5.5,7 8,7 8,9.5" fill="#4a9eca" />
+    </svg>
+  );
+}
+
+// ── Collapsible card primitive ──────────────────────────────────────────
+function CollapsibleCard({
+  title,
+  defaultOpen = false,
+  badge = null,
+  rightSlot = null,
+  noPadding = false,
+  nested = false,
+  children,
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  const titleSize = nested ? "text-[9px]" : "text-[10px]";
+
+  return (
+    <div
+      className={
+        nested
+          ? "rounded-xl border overflow-hidden"
+          : "rounded-2xl border shadow-sm overflow-hidden"
+      }
+      style={{
+        background: nested ? BG : SU,
+        borderColor: BO,
+      }}
+    >
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`w-full flex items-center justify-between ${
+          nested ? "px-3 py-2" : "px-4 py-3"
+        }`}
+        style={{
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <span
+            className="text-[10px] font-bold"
+            style={{ color: MU, width: 8, display: "inline-block" }}
+          >
+            {open ? "▾" : "▸"}
+          </span>
+          <span
+            className={`${titleSize} font-bold tracking-widest uppercase`}
+            style={{ color: nested ? TX : A }}
+          >
+            {title}
+          </span>
+          {badge != null && (
+            <span
+              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+              style={{
+                background: AL,
+                color: AD,
+                minWidth: 18,
+                textAlign: "center",
+              }}
+            >
+              {badge}
+            </span>
+          )}
+        </div>
+        {rightSlot}
+      </button>
+      {open && (
+        <div
+          className={noPadding ? "" : nested ? "px-3 pb-3" : "px-4 pb-4"}
+          style={{ borderTop: `1px solid ${nested ? BO : BG}` }}
+        >
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── Top header bar ───────────────────────────────────────────────────────
 function HeaderBar({ tab, setTab, profile, onPdf, onSignOut, t, pdfBusy }) {
@@ -689,11 +790,11 @@ function GoalsDetailModal({ data, onClose, t }) {
   );
 }
 
-// ── Goals side card ──────────────────────────────────────────────────────
+// ── Goals side card body (no title — wrapper provides it) ────────────────
 function GoalsCard({ data, t, onReadMore }) {
   if (!data)
     return (
-      <div className="text-xs" style={{ color: MU }}>
+      <div className="text-xs pt-2" style={{ color: MU }}>
         {t.goalsNever ?? "Not completed"}
       </div>
     );
@@ -702,7 +803,7 @@ function GoalsCard({ data, t, onReadMore }) {
   const color = GOALS_STATUS_COLORS[s.status] ?? A;
   return (
     <>
-      <div className="flex items-center justify-between mt-2">
+      <div className="flex items-center justify-between pt-2">
         <div>
           <div className="text-2xl font-black" style={{ color }}>
             {s.avg ?? "—"}
@@ -737,7 +838,7 @@ function CalendarTab({
   profile,
   logs,
   scores,
-  stats /* ← add this */,
+  stats,
   latestHooper,
   latestRestq,
   latestGoals,
@@ -754,6 +855,11 @@ function CalendarTab({
   });
   const [modalDate, setModalDate] = useState(null);
   const [goalsOpen, setGoalsOpen] = useState(false);
+
+  const data = useMemo(
+    () => ({ logs, scores, latestPss10, latestPsqi }),
+    [logs, scores, latestPss10, latestPsqi],
+  );
 
   const logByDate = useMemo(() => {
     const m = {};
@@ -777,28 +883,38 @@ function CalendarTab({
     [logs, monthPrefix],
   );
 
-  const monthAvgs = useMemo(() => {
-    const avg = (key, nonRest = false) => {
-      const arr = monthLogs
-        .filter((l) => (nonRest ? !l.isRestDay : true))
-        .map((l) => l[key])
-        .filter((v) => typeof v === "number");
-      return arr.length ? arr.reduce((s, v) => s + v, 0) / arr.length : null;
-    };
-    const totalMins = monthLogs.reduce((s, l) => s + totalMinutes(l), 0);
-    return {
-      effort: avg("effort", true),
-      mood: avg("mood"),
-      energy: avg("energy"),
-      sleep: avg("sleepQuality"),
-      soreness: avg("soreness"),
-      totalMinutes: totalMins,
-      sessions: monthLogs.filter(
-        (l) => !l.isRestDay && (l.workouts || []).length > 0,
-      ).length,
-      restDays: monthLogs.filter((l) => l.isRestDay).length,
-    };
-  }, [monthLogs]);
+  const monthSessions = useMemo(
+    () =>
+      monthLogs.filter((l) => !l.isRestDay && (l.workouts || []).length > 0)
+        .length,
+    [monthLogs],
+  );
+  const monthTotalMins = useMemo(
+    () => monthLogs.reduce((s, l) => s + totalMinutes(l), 0),
+    [monthLogs],
+  );
+  const monthRestDays = useMemo(
+    () => monthLogs.filter((l) => l.isRestDay).length,
+    [monthLogs],
+  );
+
+  const tipsCount = useMemo(() => {
+    const rel = profile?.relevantAdvice;
+    const viewed = profile?.viewedAdvice;
+    if (!Array.isArray(rel)) return 0;
+    if (!Array.isArray(viewed) || viewed.length === 0) return rel.length;
+    const viewedSet = new Set(viewed);
+    return rel.filter((id) => !viewedSet.has(id)).length;
+  }, [profile]);
+
+  const questionnaireCount = useMemo(() => {
+    let n = 0;
+    if (latestGoals) n++;
+    // if (latestPss10) n++;
+    // if (latestPsqi) n++;
+    // if (latestIpaq) n++;
+    return n;
+  }, [latestGoals]);
 
   const months = t.months ?? [
     "January",
@@ -821,326 +937,321 @@ function CalendarTab({
   const firstDay = firstDow(y, m);
   const todayStr = fmtDate(new Date());
 
-  const AVG_ROWS = [
+  const legendItems = [
     {
-      key: "effort",
-      label: t.effort ?? "Effort",
-      max: 5,
-      color: "#F59E0B",
-      icon: "⚡",
+      key: "highEffort",
+      icon: <span className="text-base">⚡</span>,
+      label: t.legendHighEffort ?? "High effort",
     },
     {
-      key: "mood",
-      label: t.mood ?? "Mood",
-      max: 5,
-      color: "#4A7AB5",
-      icon: "😊",
+      key: "restDay",
+      icon: <span className="text-base">🛌</span>,
+      label: t.legendRestDay ?? "Rest day",
     },
     {
-      key: "energy",
-      label: t.energy ?? "Energy",
-      max: 5,
-      color: "#22C55E",
-      icon: "🔋",
+      key: "highSoreness",
+      icon: <span className="text-base">🔥</span>,
+      label: t.legendHighSoreness ?? "High soreness",
     },
     {
-      key: "sleep",
-      label: t.sleep ?? "Sleep",
-      max: 5,
-      color: "#A855F7",
-      icon: "💤",
-    },
-    {
-      key: "soreness",
-      label: t.soreness ?? "Soreness",
-      max: 5,
-      color: "#EF4444",
-      icon: "🔥",
+      key: "note",
+      icon: <NoteIcon size={14} />,
+      label: t.legendNote ?? "Has a note",
     },
   ];
 
   return (
-    <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
-      {/* LEFT: Calendar + Insights stacked */}
-      <div className="flex flex-col gap-4">
-        <div
-          className="rounded-2xl border shadow-sm overflow-hidden"
-          style={{ background: SU, borderColor: BO }}
-        >
-          <div className="flex items-center justify-between px-4 pt-3 pb-2">
-            <button
-              onClick={() =>
-                setMonth((p) => {
-                  const d = new Date(p.y, p.m - 1);
-                  return { y: d.getFullYear(), m: d.getMonth() };
-                })
-              }
-              className="w-7 h-7 rounded-md border flex items-center justify-center"
-              style={{ borderColor: BO, color: MU }}
-            >
-              ‹
-            </button>
-            <span
-              className="text-xs font-bold tracking-widest uppercase"
-              style={{ color: A }}
-            >
-              {months[m]} {y}
-            </span>
-            <button
-              onClick={() =>
-                setMonth((p) => {
-                  const d = new Date(p.y, p.m + 1);
-                  return { y: d.getFullYear(), m: d.getMonth() };
-                })
-              }
-              className="w-7 h-7 rounded-md border flex items-center justify-center"
-              style={{ borderColor: BO, color: MU }}
-            >
-              ›
-            </button>
-          </div>
+    <div className="max-w-5xl mx-auto">
+      {/* Snapshot row — full width */}
+      <WellnessIndex data={data} t={t} month={month} />
+      <StreakComparison data={data} t={t} />
 
-          <div className="grid grid-cols-7 gap-0.5 px-3">
-            {weekdays.map((d, i) => (
-              <div
-                key={i}
-                className="text-center text-[9px] font-bold pb-1"
-                style={{ color: MU }}
+      {/* Calendar (left) + right-column collapsibles */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* LEFT: Calendar only */}
+        <div className="flex flex-col gap-4">
+          <div
+            className="rounded-2xl border shadow-sm overflow-hidden"
+            style={{ background: SU, borderColor: BO }}
+          >
+            <div className="flex items-center justify-between px-4 pt-3 pb-2">
+              <button
+                onClick={() =>
+                  setMonth((p) => {
+                    const d = new Date(p.y, p.m - 1);
+                    return { y: d.getFullYear(), m: d.getMonth() };
+                  })
+                }
+                className="w-7 h-7 rounded-md border flex items-center justify-center"
+                style={{ borderColor: BO, color: MU }}
               >
-                {d}
-              </div>
-            ))}
-          </div>
+                ‹
+              </button>
+              <span
+                className="text-xs font-bold tracking-widest uppercase"
+                style={{ color: A }}
+              >
+                {months[m]} {y}
+              </span>
+              <button
+                onClick={() =>
+                  setMonth((p) => {
+                    const d = new Date(p.y, p.m + 1);
+                    return { y: d.getFullYear(), m: d.getMonth() };
+                  })
+                }
+                className="w-7 h-7 rounded-md border flex items-center justify-center"
+                style={{ borderColor: BO, color: MU }}
+              >
+                ›
+              </button>
+            </div>
 
-          <div className="grid grid-cols-7 gap-0.5 px-3 pb-3">
-            {Array.from({ length: firstDay }).map((_, i) => (
-              <div key={"e" + i} />
-            ))}
-            {Array.from({ length: days }).map((_, i) => {
-              const day = i + 1;
-              const ds = `${y}-${pad(m + 1)}-${pad(day)}`;
-              const log = logByDate[ds];
-              const score = scoreByDate[ds];
-              const bucket = bucketOf(score?.compositeScore);
-              const isToday = ds === todayStr;
-              const hasNote = includeNotes && !!log?.note?.trim();
-              const hasWorkouts = (log?.workouts || []).length > 0;
-
-              return (
+            <div className="grid grid-cols-7 gap-0.5 px-3">
+              {weekdays.map((d, i) => (
                 <div
-                  key={day}
-                  onClick={() => log && setModalDate(ds)}
-                  className="relative rounded-md py-1 text-center"
-                  style={{
-                    minHeight: 32,
-                    background: bucket ? BUCKET_COLORS[bucket] : "transparent",
-                    color: log ? "#fff" : MU,
-                    border: isToday
-                      ? `2px solid ${A}`
-                      : `1px solid ${log ? "transparent" : BO}`,
-                    cursor: log ? "pointer" : "default",
-                  }}
+                  key={i}
+                  className="text-center text-[9px] font-bold pb-1"
+                  style={{ color: MU }}
                 >
-                  <div className="text-[10px] font-bold leading-tight">
-                    {day}
-                  </div>
-                  {log?.isRestDay && (
-                    <span className="absolute -top-2 -right-2 text-lg">🛌</span>
-                  )}
-                  {log?.effort > 4 && (
-                    <span className="absolute -top-2 -left-2 text-lg">⚡</span>
-                  )}
-                  {hasWorkouts && (
-                    <div className="text-[9px] font-bold opacity-90">
-                      {totalMinutes(log)}m
-                    </div>
-                  )}
-                  {hasNote && (
-                    <svg
-                      className="absolute -bottom-2 -right-2"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 10 10"
-                      fill="none"
-                      style={{ zIndex: 10 }}
-                    >
-                      <rect
-                        x="1"
-                        y="1"
-                        width="8"
-                        height="6"
-                        rx="1.5"
-                        fill="#4a9eca"
-                      />
-                      <polygon points="5.5,7 8,7 8,9.5" fill="#4a9eca" />
-                    </svg>
-                  )}
-                  {log?.soreness >= 4 && (
-                    <span
-                      className="absolute -bottom-2 -left-2 text-lg"
-                      style={{ zIndex: 10 }}
-                    >
-                      🔥
-                    </span>
-                  )}
+                  {d}
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
 
-          <div
-            className="px-4 py-2 flex flex-wrap gap-2 border-t"
-            style={{ borderColor: BO }}
-          >
-            {[
-              [5, t.great ?? "Great"],
-              [4, t.good ?? "Good"],
-              [3, t.ok ?? "OK"],
-              [2, t.poor ?? "Poor"],
-              [1, t.bad ?? "Bad"],
-            ].map(([b, lbl]) => (
-              <div
-                key={b}
-                className="flex items-center gap-1.5 text-[10px] font-semibold"
-                style={{ color: TX }}
-              >
+            <div className="grid grid-cols-7 gap-0.5 px-3 pb-3">
+              {Array.from({ length: firstDay }).map((_, i) => (
+                <div key={"e" + i} />
+              ))}
+              {Array.from({ length: days }).map((_, i) => {
+                const day = i + 1;
+                const ds = `${y}-${pad(m + 1)}-${pad(day)}`;
+                const log = logByDate[ds];
+                const score = scoreByDate[ds];
+                const bucket = bucketOf(score?.compositeScore);
+                const isToday = ds === todayStr;
+                const hasNote = includeNotes && !!log?.note?.trim();
+                const minutes = totalMinutes(log);
+                const hasWorkouts = minutes > 0;
+
+                return (
+                  <div
+                    key={day}
+                    onClick={() => log && setModalDate(ds)}
+                    className="relative rounded-md py-1 text-center"
+                    style={{
+                      minHeight: 32,
+                      background: bucket
+                        ? BUCKET_COLORS[bucket]
+                        : "transparent",
+                      color: log ? "#fff" : MU,
+                      border: isToday
+                        ? `2px solid ${A}`
+                        : `1px solid ${log ? "transparent" : BO}`,
+                      cursor: log ? "pointer" : "default",
+                    }}
+                  >
+                    <div className="text-[10px] font-bold leading-tight">
+                      {day}
+                    </div>
+                    {log?.isRestDay && (
+                      <span className="absolute -top-2 -right-2 text-lg">
+                        🛌
+                      </span>
+                    )}
+                    {log?.effort > 4 && (
+                      <span className="absolute -top-2 -left-2 text-lg">
+                        ⚡
+                      </span>
+                    )}
+                    {hasWorkouts && (
+                      <div className="text-[9px] font-bold opacity-90">
+                        {totalMinutes(log)}m
+                      </div>
+                    )}
+                    {hasNote && (
+                      <svg
+                        className="absolute -bottom-2 -right-2"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 10 10"
+                        fill="none"
+                        style={{ zIndex: 10 }}
+                      >
+                        <rect
+                          x="1"
+                          y="1"
+                          width="8"
+                          height="6"
+                          rx="1.5"
+                          fill="#4a9eca"
+                        />
+                        <polygon points="5.5,7 8,7 8,9.5" fill="#4a9eca" />
+                      </svg>
+                    )}
+                    {log?.soreness >= 4 && (
+                      <span
+                        className="absolute -bottom-2 -left-2 text-lg"
+                        style={{ zIndex: 10 }}
+                      >
+                        🔥
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Icon legend */}
+            <div
+              className="px-4 py-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t"
+              style={{ borderColor: BO }}
+            >
+              {legendItems.map((item) => (
                 <div
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ background: BUCKET_COLORS[b] }}
-                />
-                {lbl}
-              </div>
-            ))}
-          </div>
+                  key={item.key}
+                  className="flex items-center gap-1.5 text-[10px] font-semibold"
+                  style={{ color: TX }}
+                >
+                  <span className="inline-flex items-center justify-center w-4 h-4">
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </div>
+              ))}
+            </div>
 
-          <div
-            className="px-4 py-3 border-t grid grid-cols-3 text-center"
-            style={{ borderColor: BO }}
-          >
-            <div>
-              <div className="text-lg font-black" style={{ color: A }}>
-                {monthAvgs.sessions}
+            <div
+              className="px-4 py-3 border-t grid grid-cols-3 text-center"
+              style={{ borderColor: BO }}
+            >
+              <div>
+                <div className="text-lg font-black" style={{ color: A }}>
+                  {monthSessions}
+                </div>
+                <div
+                  className="text-[9px] font-bold uppercase tracking-wider"
+                  style={{ color: MU }}
+                >
+                  {t.sessions ?? "Sessions"}
+                </div>
               </div>
-              <div
-                className="text-[9px] font-bold uppercase tracking-wider"
-                style={{ color: MU }}
-              >
-                {t.sessions ?? "Sessions"}
+              <div>
+                <div className="text-lg font-black" style={{ color: A }}>
+                  {monthTotalMins}
+                </div>
+                <div
+                  className="text-[9px] font-bold uppercase tracking-wider"
+                  style={{ color: MU }}
+                >
+                  {t.totalMinutes ?? "Minutes"}
+                </div>
               </div>
-            </div>
-            <div>
-              <div className="text-lg font-black" style={{ color: A }}>
-                {monthAvgs.totalMinutes}
-              </div>
-              <div
-                className="text-[9px] font-bold uppercase tracking-wider"
-                style={{ color: MU }}
-              >
-                {t.totalMinutes ?? "Minutes"}
-              </div>
-            </div>
-            <div>
-              <div className="text-lg font-black" style={{ color: A }}>
-                {monthAvgs.restDays}
-              </div>
-              <div
-                className="text-[9px] font-bold uppercase tracking-wider"
-                style={{ color: MU }}
-              >
-                {t.restDays ?? "Rest days"}
+              <div>
+                <div className="text-lg font-black" style={{ color: A }}>
+                  {monthRestDays}
+                </div>
+                <div
+                  className="text-[9px] font-bold uppercase tracking-wider"
+                  style={{ color: MU }}
+                >
+                  {t.restDays ?? "Rest days"}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Insights — under the calendar in the LEFT column */}
-        {/* Tips marked relevant by the client but not yet viewed */}
-        <AdviceCards
-          relevantAdvice={profile?.relevantAdvice}
-          viewedAdvice={profile?.viewedAdvice}
-          t={t}
-        />
+        {/* RIGHT column — all collapsibles, all closed by default */}
+        <div className="flex flex-col gap-4">
+          <CollapsibleCard
+            title={t.monthlyAverages ?? "Monthly averages"}
+            defaultOpen={false}
+            noPadding
+            rightSlot={
+              <span
+                className="text-[10px] font-semibold mr-2"
+                style={{ color: MU }}
+              >
+                {monthLogs.length} {t.daysLoggedLower ?? "days logged"}
+              </span>
+            }
+          >
+            <div style={{ padding: 12 }}>
+              <MonthlyTrendsCard data={data} t={t} month={month} />
+            </div>
+          </CollapsibleCard>
+
+          <CollapsibleCard
+            title={t.relevantTips ?? "Relevant tips"}
+            defaultOpen={false}
+            badge={tipsCount > 0 ? tipsCount : null}
+          >
+            <div className="pt-2">
+              <AdviceCards
+                relevantAdvice={profile?.relevantAdvice}
+                viewedAdvice={profile?.viewedAdvice}
+                t={t}
+              />
+            </div>
+          </CollapsibleCard>
+
+          <CollapsibleCard
+            title={t.questionnaires ?? "Questionnaires"}
+            defaultOpen={false}
+            badge={questionnaireCount > 0 ? questionnaireCount : null}
+          >
+            <div className="pt-2 flex flex-col gap-2">
+              <CollapsibleCard
+                title={t.goalsTitle ?? "Goal Check-in"}
+                defaultOpen={false}
+                nested
+                rightSlot={
+                  latestGoals?.date && (
+                    <span
+                      className="text-[10px] font-semibold mr-1"
+                      style={{ color: MU }}
+                    >
+                      {latestGoals.date}
+                    </span>
+                  )
+                }
+              >
+                <GoalsCard
+                  data={latestGoals}
+                  t={t}
+                  onReadMore={() => latestGoals && setGoalsOpen(true)}
+                />
+              </CollapsibleCard>
+
+              {/* Future questionnaires drop in here as nested collapsibles:
+              <CollapsibleCard title={t.pss10Title ?? "PSS-10"} defaultOpen={false} nested>
+                <QuestionnaireCard type="pss10" latest={latestPss10} t={t} locale={lang} />
+              </CollapsibleCard>
+              <CollapsibleCard title={t.psqiTitle ?? "PSQI"} defaultOpen={false} nested>
+                <QuestionnaireCard type="psqi" latest={latestPsqi} t={t} locale={lang} />
+              </CollapsibleCard>
+              <CollapsibleCard title={t.ipaqTitle ?? "IPAQ-SF"} defaultOpen={false} nested>
+                <QuestionnaireCard type="ipaq" latest={latestIpaq} t={t} locale={lang} />
+              </CollapsibleCard>
+              */}
+            </div>
+          </CollapsibleCard>
+        </div>
       </div>
 
-      {/* RIGHT: averages + Goals + 3 questionnaires */}
-      <div className="flex flex-col gap-4">
-        <div
-          className="rounded-2xl border shadow-sm p-4"
-          style={{ background: SU, borderColor: BO }}
-        >
-          <div
-            className="text-[10px] font-bold tracking-widest uppercase mb-3"
-            style={{ color: A }}
-          >
-            {t.monthlyAverages ?? "Monthly averages"} — {months[m]}
-          </div>
-          <div className="flex flex-col gap-3">
-            {AVG_ROWS.map((r) => {
-              const v = monthAvgs[r.key];
-              const pct = v != null ? (v / r.max) * 100 : 0;
-              return (
-                <div key={r.key}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm">{r.icon}</span>
-                      <span
-                        className="text-xs font-semibold"
-                        style={{ color: TX }}
-                      >
-                        {r.label}
-                      </span>
-                    </div>
-                    <span
-                      className="text-sm font-black"
-                      style={{ color: v != null ? r.color : MU }}
-                    >
-                      {v != null ? v.toFixed(1) : "—"}
-                      <span
-                        className="text-[10px] font-semibold ml-0.5"
-                        style={{ color: MU }}
-                      >
-                        /{r.max}
-                      </span>
-                    </span>
-                  </div>
-                  <div
-                    className="h-1.5 rounded-full overflow-hidden"
-                    style={{ background: BG }}
-                  >
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: pct + "%", background: r.color }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        <div
-          className="rounded-2xl border shadow-sm p-4"
-          style={{ background: SU, borderColor: BO }}
-        >
-          <div
-            className="text-[10px] font-bold tracking-widest uppercase"
-            style={{ color: A }}
-          >
-            {t.goalsTitle ?? "Goal Check-in"}
-          </div>
-          <GoalsCard
-            data={latestGoals}
-            t={t}
-            onReadMore={() => latestGoals && setGoalsOpen(true)}
-          />
-        </div>
-
-        {/* Three questionnaire cards 
-        <QuestionnaireCard type="pss10" latest={latestPss10} t={t} locale={lang} />
-        <QuestionnaireCard type="psqi"  latest={latestPsqi}  t={t} locale={lang} />
-        <QuestionnaireCard type="ipaq"  latest={latestIpaq}  t={t} locale={lang} />
-
-        */}
+      {/* Year-in-pixels + Trajectory — side-by-side below the calendar grid */}
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+        style={{ marginTop: 16 }}
+      >
+        <YearInPixels
+          data={data}
+          t={t}
+          currentMonth={month}
+          onMonthJump={(newMonth) => setMonth(newMonth)}
+        />
+        <WellnessSparkline data={data} t={t} currentMonth={month} />
       </div>
 
       {modalDate && (
@@ -1200,7 +1311,7 @@ export default function Dashboard({ report, lang, code }) {
             logs={report.logs}
             profile={profile}
             scores={report.scores}
-            stats={report.stats} /* ← add this */
+            stats={report.stats}
             latestHooper={report.latestHooper}
             latestRestq={report.latestRestq}
             latestGoals={report.latestGoals}
